@@ -3,6 +3,7 @@
 1、安装Ruby
 安装ruby
 1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
+
 2）启用rvm,source /home/ubuntu/.rvm/scripts/rvm
 3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
 
