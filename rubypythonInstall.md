@@ -1,34 +1,33 @@
 安装过程中有些命令要有sudo才能安装，如果遇到Permission denied
 
 1、安装Ruby
-安装ruby
-1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
-
-2）启用rvm,source /home/ubuntu/.rvm/scripts/rvm
-3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
+  安装ruby
+  1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
+  2）启用rvm,source /home/ubuntu/.rvm/scripts/rvm
+  3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
 
 2、安装zlib
-要在python安装之前安装，
-必须通过代码安装才能起效。
-下载zlib-1.2.7.tar.gz，下载地址：
-http://download.chinaunix.net/download.php?id=40893&ResourceID=12241
-解压
-configure、make、make install
-然后重新安装python（2.6版本）和setuptools（4.0版本）
+  要在python安装之前安装，
+  必须通过代码安装才能起效。
+  下载zlib-1.2.7.tar.gz，下载地址：
+  http://download.chinaunix.net/download.php?id=40893&ResourceID=12241
+  解压
+  configure、make、make install
+  然后重新安装python（2.6版本）和setuptools（4.0版本）
 
 3、安装Pyhon2.6版本
-由于ubuntu 14.04上，默认的Python为2.7，我们开发依赖的rubypython，在2.7版本下有问题。需要安装使用python2.6版。
-1）安装Python2.6
-1.1 下载Python-2.6.6.tgz，下载地址：http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
-sudo wget http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
-青云上下载这个包很慢，可以本地下载好传上去
-1.2 解压tgz ：
-tar -xzvf Python-2.6.6.tgz  
-1.3 cd 到解压后的文件夹中，进行Python的make 安装
+  由于ubuntu 14.04上，默认的Python为2.7，我们开发依赖的rubypython，在2.7版本下有问题。需要安装使用python2.6版。
+  1）安装Python2.6
+  1.1 下载Python-2.6.6.tgz，下载地址：http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
+  sudo wget http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
+  青云上下载这个包很慢，可以本地下载好传上去
+  1.2 解压tgz ：
+  tar -xzvf Python-2.6.6.tgz  
+  1.3 cd 到解压后的文件夹中，进行Python的make 安装
 
-./configure --enable-shared  （安装在了/usr/local/）
-make  
-make altinstall
+  ./configure --enable-shared  （安装在了/usr/local/）
+  make  
+  make altinstall
 
 1.4 建立lib连接：sudo ln -s /usr/local/lib/libpython2.6.so.1.0  /usr/lib/libpython2.6.so.1.0
 
