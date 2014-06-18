@@ -103,6 +103,8 @@ cp /usr/local/lib/python2.7/lib-dynload/_hashlib.so /usr/local/lib/python2.6/lib
 
 关键是找_hashlib.so，
 
+如果找不到，需要按照安装2.6的方式，重新安装下2.7，这个时候可以在上面对应目录中找到
+
 5、安装ffi
 
 Ruby FFI库可以访问从共享库中加载的本地代码，类似于c的动态链接库概念
