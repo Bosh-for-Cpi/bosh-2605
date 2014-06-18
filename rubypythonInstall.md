@@ -1,18 +1,29 @@
 安装过程中有些命令要有sudo才能安装，如果遇到Permission denied
 
 1、安装Ruby
+
   安装ruby
+  
   1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
+  
   2）启用rvm,source /home/ubuntu/.rvm/scripts/rvm
+  
   3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
 
 2、安装zlib
+
   要在python安装之前安装，
+  
   必须通过代码安装才能起效。
+  
   下载zlib-1.2.7.tar.gz，下载地址：
+  
   http://download.chinaunix.net/download.php?id=40893&ResourceID=12241
+  
   解压
+  
   configure、make、make install
+  
   然后重新安装python（2.6版本）和setuptools（4.0版本）
 
 3、安装Pyhon2.6版本
