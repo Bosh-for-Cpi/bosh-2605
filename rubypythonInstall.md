@@ -60,6 +60,10 @@ p cPickle.dumps("Testing RubyPython.").rubify
 
 RubyPython.stop # stop the Python interpreter
 
+正常输出：
+
+"S'Testing RubyPython.'\n."
+
 2、测试sdk功能
 
 import qingcloud.iaas
@@ -83,3 +87,7 @@ ret = conn.describe_instances(
       )
 
 print ret
+
+正常输出：
+
+{u'action': u'DescribeInstancesResponse', u'instance_set': [{u'vcpus_current': 1, u'instance_id': u'i-zqzojyoh', u'vxnets': [{u'vxnet_name': u'primary vxnet', u'vxnet_type': 1, u'vxnet_id': u'vxnet-0', u'nic_id': u'52:54:c8:9f:63:d1', u'private_ip': u''}], u'memory_current': 1024, u'lastest_snapshot_time': u'', u'sub_code': 0, u'transition_status': u'', u'instance_name': u'Leon', u'instance_type': u'c1m1', u'create_time': u'2014-06-18T02:27:09Z', u'status': u'stopped', u'owner': u'usr-HJOoBo2T', u'status_time': u'2014-06-18T11:09:05Z', u'image': {u'processor_type': u'64bit', u'platform': u'linux', u'image_size': 20, u'image_name': u'Ubuntu Server 14.04 LTS 64bit', u'image_id': u'trustysrvx64a', u'os_family': u'ubuntu', u'provider': u'system'}, u'description': None}, {u'vcpus_current': 1, u'instance_id': u'i-fokn7r0i', u'vxnets': [{u'vxnet_name': u'primary vxnet', u'vxnet_type': 1, u'vxnet_id': u'vxnet-0', u'nic_id': u'52:54:fe:68:ae:42', u'private_ip': u''}], u'memory_current': 1024, u'lastest_snapshot_time': u'', u'sub_code': 0, u'transition_status': u'', u'instance_name': u'test11', u'instance_type': u'c1m1', u'create_time': u'2014-06-18T13:33:49Z', u'status': u'stopped', u'owner': u'usr-HJOoBo2T', u'status_time': u'2014-06-18T13:34:28Z', u'image': {u'processor_type': u'64bit', u'platform': u'linux', u'image_size': 20, u'image_name': u'Ubuntu Server 14.04 LTS 64bit', u'image_id': u'trustysrvx64a', u'os_family': u'ubuntu', u'provider': u'system'}, u'description': None}, {u'vcpus_current': 1, u'eip': {u'eip_id': u'eip-lxempw9c', u'bandwidth': 4, u'eip_addr': u'121.201.8.66'}, u'vxnets': [{u'vxnet_name': u'primary vxnet', u'vxnet_type': 1, u'vxnet_id': u'vxnet-0', u'nic_id': u'52:54:59:33:b2:ca', u'private_ip': u'10.60.32.132'}], u'memory_current': 1024, u'lastest_snapshot_time': u'', u'sub_code': 0, u'transition_status': u'', u'instance_id': u'i-coyij9m6', u'instance_type': u'c1m1', u'create_time': u'2014-06-18T12:01:56Z', u'status': u'running', u'owner': u'usr-HJOoBo2T', u'status_time': u'2014-06-19T01:34:53Z', u'instance_name': u'wjq', u'image': {u'processor_type': u'64bit', u'platform': u'linux', u'image_size': 20, u'image_name': u'Ubuntu Server 14.04 LTS 64bit', u'image_id': u'trustysrvx64a', u'os_family': u'ubuntu', u'provider': u'system'}, u'description': None}, {u'vcpus_current': 1, u'eip': {u'eip_id': u'eip-kha55lf3', u'bandwidth': 4, u'eip_addr': u'121.201.7.212'}, u'vxnets': [{u'vxnet_name': u'primary vxnet', u'vxnet_type': 1, u'vxnet_id': u'vxnet-0', u'nic_id': u'52:54:d4:fb:66:e9', u'private_ip': u'10.60.49.64'}], u'memory_current': 1024, u'lastest_snapshot_time': u'', u'sub_code': 0, u'transition_status': u'', u'instance_id': u'i-gmarffqy', u'instance_type': u'c1m1', u'create_time': u'2014-06-19T02:57:09Z', u'status': u'running', u'owner': u'usr-HJOoBo2T', u'status_time': u'2014-06-19T02:57:09Z', u'instance_name': u'Leon_test', u'image': {u'processor_type': u'64bit', u'platform': u'linux', u'image_size': 20, u'image_name': u'Ubuntu Server 14.04 LTS 64bit', u'image_id': u'trustysrvx64a', u'os_family': u'ubuntu', u'provider': u'system'}, u'description': None}], u'ret_code': 0, u'total_count': 4}
