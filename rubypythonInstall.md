@@ -6,7 +6,11 @@
   
   1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
   
-  2）启用rvm,source /home/ubuntu/.rvm/scripts/rvm
+  2）启用rvm,
+  
+  source /home/ubuntu/.rvm/scripts/rvm
+  
+  echo "source /etc/profile.d/rvm.sh" >> ~/.bashrc 
   
   3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
 
@@ -87,7 +91,7 @@ https://bitbucket.org/pypa/setuptools/downloads/setuptools-4.1b1.zip
 
 解压安装
 
-tar -xzvf setuptools-4.1b1.zip
+unzip setuptools-4.1b1.zip
 
 cd 到解压文件夹
 
