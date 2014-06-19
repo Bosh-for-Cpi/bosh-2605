@@ -14,4 +14,5 @@ echo 'vcap:c1oudc0w' | chpasswd;
 echo 'root:c1oudc0w' | chpasswd;
 usermod -G admin,adm,audio,cdrom,dialout,floppy,video,dip,plugdev vcap;
 usermod -s /bin/bash vcap;
+
 4、解压的时候tar pzxvf vcap.microbosh.tgz
