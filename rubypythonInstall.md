@@ -1,153 +1,85 @@
-安装过程中有些命令要有sudo才能安装，如果遇到Permission denied
 
-1、安装Ruby
+由于rubypython需要用到Python的动态链接库，但是默认情况下，rubypython无法找到
 
-  安装ruby
-  
-  1）安装rvm,curl -sSL https://get.rvm.io | bash -s stable
-  
-  2）启用rvm,
-  
-  source /home/ubuntu/.rvm/scripts/rvm
-  
-  echo "source /etc/profile.d/rvm.sh" >> ~/.bashrc 
-  
-  3）ruby安装，安装1.9.3，rvm install ruby 1.9.3
+需要手动处理
 
-2、安装zlib
+1、找到Python2.7的动态链接库
 
-  要在python安装之前安装，
-  
-  必须通过代码安装才能起效。
-  
-  下载zlib-1.2.7.tar.gz，下载地址：
-  
-  http://download.chinaunix.net/download.php?id=40893&ResourceID=12241
-  
-  解压
-  
-  configure、make、make install
-  
-  然后重新安装python（2.6版本）和setuptools（4.0版本）
+find / -name libpython2.7.so.1.0
 
-3、安装Pyhon2.6版本
+/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0
 
-  由于ubuntu 14.04上，默认的Python为2.7，我们开发依赖的rubypython，在2.7版本下有问题。需要安装使用python2.6版。
-  
-  1）安装Python2.6
-  
-  1.1 下载Python-2.6.6.tgz，下载地址：http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
-  
-  sudo wget http://www.python.org/ftp/python/2.6.6/Python-2.6.6.tgz
-  
-  青云上下载这个包很慢，可以本地下载好传上去
-  
-  1.2 解压tgz ：
-  
-  tar -xzvf Python-2.6.6.tgz  
-  
-  1.3 cd 到解压后的文件夹中，进行Python的make 安装
+2、创建软连接
 
-  ./configure --enable-shared  （安装在了/usr/local/）
-  
-  make  
-  
-  make altinstall
+ln -s /usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0  /usr/lib/libpython2.7.so.1.0
 
-1.4 建立lib连接：sudo ln -s /usr/local/lib/libpython2.6.so.1.0  /usr/lib/libpython2.6.so.1.0
+安装ruby环境
 
-1.5 最后还要修改下python软连接。使Python的系统版本切换到Python2.6版本
+1、curl -sSL https://get.rvm.io | bash -s stable
 
-which python
+2、source /etc/profile.d/rvm.sh
 
-/usr/bin/python
+3、echo "source /etc/profile.d/rvm.sh" >> ~/.bashrc
 
-sudo rm /usr/bin/python
+4、rvm install 1.9.3
 
-sudo ln -s /usr/local/bin/python2.6 /usr/bin/python
+安装ffi 、rubypython
 
-sudo rm /usr/bin/python2
+1、gem source -r https://rubygems.org/
 
-sudo ln -s /usr/local/bin/python2.6 /usr/bin/python2
+2、gem source -a http://ruby.taobao.org
 
-测试是否安装成功
+3、gem install ffi
 
-ubuntu@i-pareq9il:/usr/bin$ python
+4、gem install rubypython
 
-Python 2.6.6 (r266:84292, Jun 18 2014, 16:47:11) 
+安装qingcloud sdk
 
-[GCC 4.8.2] on linux3
+1、apt-get install git
 
-Type "help", "copyright", "credits" or "license" for more information.
+2、git clone https://github.com/yunify/qingcloud-sdk-python.git
 
->>> 
+3、cd qingcloud-sdk-python
+
+4、python setup.py install
 
 
-4、安装setuptools
+测试
 
-必须通过源码安装，版本setuptools-4.1b1.zip，下载地址：
+1、测试rubypython功能
 
-https://bitbucket.org/pypa/setuptools/downloads/setuptools-4.1b1.zip
-
-解压安装
-
-unzip setuptools-4.1b1.zip
-
-cd 到解压文件夹
-
-使用 sudo python2.6 setup.py install 安装
-
-如果出现如下错误，
-
-ImportError: No module named _sha256
-
-这是因为在2.6中缺少了hash相关的模块，可以从2.7中拷贝
-
-cp /usr/local/lib/python2.7/lib-dynload/_hashlib.so /usr/local/lib/python2.6/lib-dynload/_hashlib.so
-
-关键是找_hashlib.so，
-
-如果找不到，需要按照安装2.6的方式，重新安装下2.7，这个时候可以在上面对应目录中找到
-
-5、安装ffi
-
-Ruby FFI库可以访问从共享库中加载的本地代码，类似于c的动态链接库概念
-
-gem install ffi
-
-建议在使用gem前换下source源,默认源下载慢
-
-gem source -a http://ruby.taobao.org
-
-6、安装rubypython
-
-gem install rubypython
-
-7、安装qingcloud sdk
-
-需要代码安装，
-
-git clone https://github.com/yunify/qingcloud-sdk-python.git
-
-cd qingcloud-sdk-python
-
-sudo python2.6 setup.py install 
-
-8、测试
-
-1)vi rubypython.rb
-
-2)加入如下代码
+vi rubypython.rb
 
 require "rubypython"
 
 RubyPython.start # start the Python interpreter
 
-cPickle = RubyPython.import("qingcloud.iaas")
+cPickle = RubyPython.import("cPickle")
+
+p cPickle.dumps("Testing RubyPython.").rubify
 
 RubyPython.stop # stop the Python interpreter
 
-3)ruby rubypython.rb
+2、测试sdk功能
 
+import qingcloud.iaas
 
+conn = qingcloud.iaas.connect_to_zone(
 
+        'gd1',
+        
+        'DNQWQIIMXMXZNYPLEXNN',
+        
+        'i6Nn2Zq1NJ66geckRIzmMx0qVwPVUJYCQpbWDNw2'
+        
+    )
+
+ret = conn.describe_instances(
+
+        image_id='trustysrvx64a',
+        
+        status=['running', 'stopped']
+        
+      )
+
+print ret
