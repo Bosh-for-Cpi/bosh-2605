@@ -26,6 +26,11 @@ module Bosh::QingCloud
         limit = 50)
     end
 
+    def restart_instances(instances_id)
+      instances = []
+      instances << instances_id 
+      return @conn.restart_instances(instances)
+    end
 
     def describe_volumes(vm_id)
       volumes = []

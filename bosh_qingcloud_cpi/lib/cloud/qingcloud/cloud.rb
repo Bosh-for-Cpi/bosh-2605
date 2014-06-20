@@ -134,7 +134,7 @@ module Bosh::QingCloud
     # @param [String] instance_id EC2 instance id
     def reboot_vm(instance_id)
       with_thread_name("reboot_vm(#{instance_id})") do
-        InstanceManager.new(region, registry).reboot(instance_id)
+        ret = @qingcloudsdk.restart_instances(instance_id)
       end
     end
 
