@@ -254,13 +254,9 @@ module Bosh::QingCloud
     end
 
     def get_disks(vm_id)
-      disks = []
-      @ec2.instances[vm_id].block_devices.each do |block_device|
-        if block_device[:ebs]
-          disks << block_device[:ebs][:volume_id]
-        end
+      with_thread_name("get_disks(#{vm_id})") do
+        ret = @qingcloudsdk.describe_volumes(vm_id)
       end
-      disks
     end
 
     # Take snapshot of disk

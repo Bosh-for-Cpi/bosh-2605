@@ -26,5 +26,18 @@ module Bosh::QingCloud
         limit = 50)
     end
 
+
+    def describe_volumes(vm_id)
+      volumes = []
+      volumes << vm_id
+      return @conn.describe_volumes(volumes,
+                                    instance_id = [],
+                                    status = [],
+                                      search_word = [],
+                                      verbose = 0,
+                                      offset = 0,
+                                      limit = 50)
+    end
+
   end
 end			
