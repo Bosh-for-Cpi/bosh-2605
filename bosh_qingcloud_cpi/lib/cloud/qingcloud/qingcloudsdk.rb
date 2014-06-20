@@ -13,9 +13,9 @@ module Bosh::QingCloud
       @conn = @qingcloudpick.connect_to_zone(@region, @access_key_id, @secret_access_key)
     end
 
-    def describe_instances(instances_id)
+    def describe_instances(instance_id)
       instances = []
-      instances << instances_id 
+      instances << instance_id 
       return @conn.describe_instances(instances,
         image_id = [],
         instance_type = [],
@@ -39,5 +39,12 @@ module Bosh::QingCloud
                                       limit = 50)
     end
 
+
+    def terminate_instances(instance_id)
+      instances = []
+      instances << instance_id 
+      return @conn.terminate_instances(instances)
+    end
+
   end
-end			
+end

@@ -125,7 +125,7 @@ module Bosh::QingCloud
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
         logger.info("Deleting instance '#{instance_id}'")
-        InstanceManager.new(region, registry).terminate(instance_id, fast_path_delete?)
+        ret = @qingcloudsdk.terminate_instances(instance_id)
       end
     end
 
