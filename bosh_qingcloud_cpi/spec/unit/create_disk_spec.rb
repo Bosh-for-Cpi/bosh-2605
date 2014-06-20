@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   let(:zones) { [double('us-east-1a', :name => 'us-east-1a')] }
 
@@ -17,7 +17,7 @@ describe Bosh::AwsCloud::Cloud do
       region.stub(:availability_zones => zones)
     end
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
+    Bosh::QingCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
 
     cloud.create_disk(2048).should == 'v-foobar'
   end
@@ -33,7 +33,7 @@ describe Bosh::AwsCloud::Cloud do
       region.stub(:availability_zones => zones)
     end
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
+    Bosh::QingCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
 
     cloud.create_disk(2049)
   end
@@ -63,7 +63,7 @@ describe Bosh::AwsCloud::Cloud do
       region.stub(:instances => double('instances', :[] =>instance))
     end
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
+    Bosh::QingCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
 
     cloud.create_disk(1024, 'i-test')
   end
@@ -79,7 +79,7 @@ describe Bosh::AwsCloud::Cloud do
       region.stub(:availability_zones => zones)
     end
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
+    Bosh::QingCloud::ResourceWait.stub(:for_volume).with(volume: volume, state: :available)
 
     cloud.create_disk(2048)
   end

@@ -1,6 +1,6 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   ##
   #
   class Network
@@ -27,8 +27,8 @@ module Bosh::AwsCloud
     ##
     # Configures given instance
     #
-    # @param [AWS:EC2] instance EC2 client
-    # @param [AWS::EC2::Instance] EC2 instance to configure
+    # @param [QingCloud:EC2] instance EC2 client
+    # @param [QingCloud::EC2::Instance] EC2 instance to configure
     def configure(ec2, instance)
       cloud_error("`configure' not implemented by #{self.class}")
     end

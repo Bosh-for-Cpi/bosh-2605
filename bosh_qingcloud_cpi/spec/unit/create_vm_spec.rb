@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Bosh::AwsCloud::Cloud, "create_vm" do
+describe Bosh::QingCloud::Cloud, "create_vm" do
   let(:registry) { double("registry") }
   let(:region) { double("region") }
   let(:availability_zone_selector) { double("availability zone selector") }
@@ -20,7 +20,7 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
 
   let(:options) {
     {
-        "aws" => {
+        "qingcloud" => {
             "default_availability_zone" => "foo",
             "region" => "bar",
             "access_key_id" => "access",
@@ -44,18 +44,18 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
     Bosh::Registry::Client.
         stub(:new).
         and_return(registry)
-    AWS::EC2.
+    QingCloud::EC2.
         stub(:new).
         and_return(double("ec2", regions: {"bar" => region}))
-    Bosh::AwsCloud::AvailabilityZoneSelector.
+    Bosh::QingCloud::AvailabilityZoneSelector.
         stub(:new).
         with(region, "foo").
         and_return(availability_zone_selector)
-    Bosh::AwsCloud::Stemcell.
+    Bosh::QingCloud::Stemcell.
         stub(:find).
         with(region, stemcell_id).
         and_return(stemcell)
-    Bosh::AwsCloud::InstanceManager.
+    Bosh::QingCloud::InstanceManager.
         stub(:new).
         with(region, registry, availability_zone_selector).
         and_return(instance_manager)
@@ -63,7 +63,7 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
         stub(:create).
         with(agent_id, stemcell_id, resource_pool, networks_spec, disk_locality, environment, options).
         and_return(instance)
-    Bosh::AwsCloud::NetworkConfigurator.
+    Bosh::QingCloud::NetworkConfigurator.
         stub(:new).
         with(networks_spec).
         and_return(network_configurator)
@@ -92,14 +92,14 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
   it "should create an EC2 instance and return its id" do
     network_configurator.stub(:configure)
     registry.stub(:update_settings)
-    Bosh::AwsCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
+    Bosh::QingCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
 
     cloud.create_vm(agent_id, stemcell_id, resource_pool, networks_spec, disk_locality, environment).should == "expected instance id"
   end
 
   it "should configure the IP for the created instance according to the network specifications" do
     registry.stub(:update_settings)
-    Bosh::AwsCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
+    Bosh::QingCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
 
     network_configurator.should_receive(:configure).with(region, instance)
 
@@ -108,7 +108,7 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
 
   it "should update the registry settings with the new instance" do
     network_configurator.stub(:configure)
-    Bosh::AwsCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
+    Bosh::QingCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
     SecureRandom.stub(:uuid).and_return("rand0m")
 
     agent_settings = {
@@ -133,7 +133,7 @@ describe Bosh::AwsCloud::Cloud, "create_vm" do
   it 'should clean up after itself if something fails' do
     network_configurator.stub(:configure)
     registry.stub(:update_settings).and_raise(ArgumentError)
-    Bosh::AwsCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
+    Bosh::QingCloud::ResourceWait.stub(:for_instance).with(instance: instance, state: :running)
 
     instance_manager.should_receive(:terminate)
 

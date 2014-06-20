@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   before(:each) do
     @registry = mock_registry
@@ -30,7 +30,7 @@ describe Bosh::AwsCloud::Cloud do
     volume.should_receive(:detach_from).
       with(instance, "/dev/sdf", force: false).and_return(attachment)
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :detached)
+    Bosh::QingCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :detached)
 
     old_settings = {
       "foo" => "bar",

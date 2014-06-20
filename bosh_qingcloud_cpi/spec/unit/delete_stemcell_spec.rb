@@ -2,12 +2,12 @@
 
 require 'spec_helper'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
   it 'should delete the stemcell' do
-    stemcell = double(Bosh::AwsCloud::Stemcell)
+    stemcell = double(Bosh::QingCloud::Stemcell)
 
     cloud = mock_cloud do |_, region|
-      Bosh::AwsCloud::StemcellFinder.stub(:find_by_region_and_id).with(region, 'ami-xxxxxxxx').and_return(stemcell)
+      Bosh::QingCloud::StemcellFinder.stub(:find_by_region_and_id).with(region, 'ami-xxxxxxxx').and_return(stemcell)
     end
 
     stemcell.should_receive(:delete)

@@ -1,6 +1,6 @@
-require 'cloud/aws/light_stemcell'
+require 'cloud/qingcloud/light_stemcell'
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   describe LightStemcell do
     let(:heavy_stemcell) { double('heavy stemcell', id: 'fake-ami-id') }
     let(:logger) { double('logger') }

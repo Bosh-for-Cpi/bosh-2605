@@ -1,6 +1,6 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
 
   class VipNetwork < Network
 
@@ -16,8 +16,8 @@ module Bosh::AwsCloud
     ##
     # Configures vip network
     #
-    # @param [AWS:EC2] ec2 EC2 client
-    # @param [AWS::EC2::Instance] instance EC2 instance to configure
+    # @param [QingCloud:EC2] ec2 EC2 client
+    # @param [QingCloud::EC2::Instance] instance EC2 instance to configure
     def configure(ec2, instance)
       if @ip.nil?
         cloud_error("No IP provided for vip network `#{@name}'")
@@ -32,7 +32,7 @@ module Bosh::AwsCloud
       # if this IP is actually an allocated EC2 elastic IP, as
       # API call will fail in that case.
 
-      errors = [AWS::EC2::Errors::IncorrectInstanceState]
+      errors = [QingCloud::EC2::Errors::IncorrectInstanceState]
       Bosh::Common.retryable(tries: 10, sleep: 1, on: errors) do
         instance.associate_elastic_ip(elastic_ip)
         true # need to return true to end the retries

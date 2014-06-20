@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Bosh::AwsCloud::Cloud, '#set_vm_metadata' do
+describe Bosh::QingCloud::Cloud, '#set_vm_metadata' do
   let(:instance) { double('instance', :id => 'i-foobar') }
 
   before :each do
@@ -12,9 +12,9 @@ describe Bosh::AwsCloud::Cloud, '#set_vm_metadata' do
   it 'should add new tags for regular jobs' do
     metadata = {:job => 'job', :index => 'index'}
 
-    Bosh::AwsCloud::TagManager.should_receive(:tag).with(instance, :job, 'job')
-    Bosh::AwsCloud::TagManager.should_receive(:tag).with(instance, :index, 'index')
-    Bosh::AwsCloud::TagManager.should_receive(:tag).with(instance, 'Name', 'job/index')
+    Bosh::QingCloud::TagManager.should_receive(:tag).with(instance, :job, 'job')
+    Bosh::QingCloud::TagManager.should_receive(:tag).with(instance, :index, 'index')
+    Bosh::QingCloud::TagManager.should_receive(:tag).with(instance, 'Name', 'job/index')
 
     @cloud.set_vm_metadata('i-foobar', metadata)
   end
@@ -22,8 +22,8 @@ describe Bosh::AwsCloud::Cloud, '#set_vm_metadata' do
   it 'should add new tags for compiling jobs' do
     metadata = {:compiling => 'linux'}
 
-    Bosh::AwsCloud::TagManager.should_receive(:tag).with(instance, :compiling, 'linux')
-    Bosh::AwsCloud::TagManager.should_receive(:tag).with(instance, 'Name', 'compiling/linux')
+    Bosh::QingCloud::TagManager.should_receive(:tag).with(instance, :compiling, 'linux')
+    Bosh::QingCloud::TagManager.should_receive(:tag).with(instance, 'Name', 'compiling/linux')
 
     @cloud.set_vm_metadata('i-foobar', metadata)
   end

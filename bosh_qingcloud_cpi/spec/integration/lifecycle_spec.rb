@@ -4,21 +4,21 @@ require 'tempfile'
 require 'logger'
 require 'cloud'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
   before(:all) do
-    @access_key_id     = ENV['BOSH_AWS_ACCESS_KEY_ID']     || raise("Missing BOSH_AWS_ACCESS_KEY_ID")
-    @secret_access_key = ENV['BOSH_AWS_SECRET_ACCESS_KEY'] || raise("Missing BOSH_AWS_SECRET_ACCESS_KEY")
-    @subnet_id         = ENV['BOSH_AWS_SUBNET_ID']         || raise("Missing BOSH_AWS_SUBNET_ID")
+    @access_key_id     = ENV['BOSH_QingCloud_ACCESS_KEY_ID']     || raise("Missing BOSH_QingCloud_ACCESS_KEY_ID")
+    @secret_access_key = ENV['BOSH_QingCloud_SECRET_ACCESS_KEY'] || raise("Missing BOSH_QingCloud_SECRET_ACCESS_KEY")
+    @subnet_id         = ENV['BOSH_QingCloud_SUBNET_ID']         || raise("Missing BOSH_QingCloud_SUBNET_ID")
   end
 
   before { Bosh::Registry::Client.stub(new: double('registry').as_null_object) }
 
-  # Use subject-bang because AWS SDK needs to be reconfigured
-  # with a current test's logger before new AWS::EC2 object is created.
-  # Reconfiguration happens via `AWS.config`.
+  # Use subject-bang because QingCloud SDK needs to be reconfigured
+  # with a current test's logger before new QingCloud::EC2 object is created.
+  # Reconfiguration happens via `QingCloud.config`.
   subject!(:cpi) do
     described_class.new(
-      'aws' => {
+      'qingcloud' => {
         'region' => 'us-east-1',
         'default_key_name' => 'bosh',
         'fast_path_delete' => 'yes',
@@ -36,7 +36,7 @@ describe Bosh::AwsCloud::Cloud do
   let(:ami) { 'ami-809a48e9' } # ubuntu-lucid-10.04-i386-server-20120221 on instance store
 
   before do
-    AWS::EC2.new(
+    QingCloud::EC2.new(
       access_key_id:     @access_key_id,
       secret_access_key: @secret_access_key,
     ).instances.tagged('delete_me').each(&:terminate)
@@ -60,8 +60,8 @@ describe Bosh::AwsCloud::Cloud do
 
   # Pass in *real* previously terminated instance id
   # instead of just a made-up instance id
-  # because AWS returns Malformed error
-  # for instance ids that are not proper AWS hashed values.
+  # because QingCloud returns Malformed error
+  # for instance ids that are not proper QingCloud hashed values.
   it_can_delete_non_existent_vm 'i-49f9f169'
 
   describe 'ec2' do

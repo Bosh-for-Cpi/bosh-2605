@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-describe Bosh::AwsCloud::VipNetwork do
-  let(:ec2) { double(AWS::EC2) }
-  let(:instance) { double(AWS::EC2::Instance, :id => 'id') }
+describe Bosh::QingCloud::VipNetwork do
+  let(:ec2) { double(QingCloud::EC2) }
+  let(:instance) { double(QingCloud::EC2::Instance, :id => 'id') }
 
   it 'should require an IP' do
     vip = described_class.new('vip', {})
@@ -18,7 +18,7 @@ describe Bosh::AwsCloud::VipNetwork do
     ec2.stub_chain(:elastic_ips, :[]).and_return(elastic_ip)
     Bosh::Common.stub(:sleep)
 
-    instance.should_receive(:associate_elastic_ip).and_raise(AWS::EC2::Errors::IncorrectInstanceState)
+    instance.should_receive(:associate_elastic_ip).and_raise(QingCloud::EC2::Errors::IncorrectInstanceState)
     instance.should_receive(:associate_elastic_ip).with(elastic_ip).and_return(true)
 
     vip.configure(ec2, instance)

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Bosh::AwsCloud::ManualNetwork do
+describe Bosh::QingCloud::ManualNetwork do
   let(:network_spec) {{}}
   let(:ec2) {double("ec2")}
   let(:instance) {double("instance")}
@@ -13,7 +13,7 @@ describe Bosh::AwsCloud::ManualNetwork do
                     "dns"=>["172.22.22.153"],
                     "gateway"=>"172.20.214.1",
                     "mac"=>"00:50:56:ae:90:ab"}
-    sn = Bosh::AwsCloud::ManualNetwork.new("default", network_spec)
+    sn = Bosh::QingCloud::ManualNetwork.new("default", network_spec)
 
     sn.private_ip.should == "172.20.214.10"
   end

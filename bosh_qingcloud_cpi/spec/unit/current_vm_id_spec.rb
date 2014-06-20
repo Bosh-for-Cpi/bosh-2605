@@ -3,12 +3,12 @@
 require "spec_helper"
 require 'webmock/rspec'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   describe "#current_vm_id" do
     let(:options) {
       {
-          "aws" => {
+          "qingcloud" => {
               "default_availability_zone" => "foo",
               "region" => "bar",
               "access_key_id" => "access",
@@ -30,7 +30,7 @@ describe Bosh::AwsCloud::Cloud do
 
     let(:fake_instance_id) {"i-xxxxxxxx"}
 
-    it "should make a call to AWS and return the correct vm id" do
+    it "should make a call to QingCloud and return the correct vm id" do
       stub_request(:get, "http://169.254.169.254/latest/meta-data/instance-id/")
         .to_return(:body => fake_instance_id)
       cloud.current_vm_id.should == fake_instance_id

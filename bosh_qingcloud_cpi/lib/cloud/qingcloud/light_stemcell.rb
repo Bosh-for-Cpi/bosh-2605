@@ -1,4 +1,4 @@
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class LightStemcell
     def initialize(heavy_stemcell, logger)
       @logger = logger

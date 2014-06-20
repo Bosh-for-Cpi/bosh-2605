@@ -1,7 +1,7 @@
-require 'cloud/aws/light_stemcell'
-require 'cloud/aws/stemcell'
+require 'cloud/qingcloud/light_stemcell'
+require 'cloud/qingcloud/stemcell'
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class StemcellFinder
     def self.find_by_region_and_id(region, id)
       if id =~ / light$/

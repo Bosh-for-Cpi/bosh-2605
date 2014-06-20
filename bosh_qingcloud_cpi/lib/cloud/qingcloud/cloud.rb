@@ -1,7 +1,7 @@
 # Copyright (c) 2009-2012 VMware, Inc.
-require 'cloud/aws/stemcell_finder'
+require 'cloud/qingcloud/stemcell_finder'
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
 
   class Cloud < Bosh::Cloud
     include Helpers
@@ -17,7 +17,7 @@ module Bosh::AwsCloud
     attr_accessor :logger
 
     ##
-    # Initialize BOSH AWS CPI. The contents of sub-hashes are defined in the {file:README.md}
+    # Initialize BOSH QingCloud CPI. The contents of sub-hashes are defined in the {file:README.md}
     # @param [Hash] options CPI options
     # @option options [Hash] aws AWS specific options
     # @option options [Hash] agent agent options
@@ -28,10 +28,11 @@ module Bosh::AwsCloud
 
       @logger = Bosh::Clouds::Config.logger
 
-      initialize_aws
-      initialize_registry
+      initialize_qingcloud
+      #initialize_registry
 
       @metadata_lock = Mutex.new
+      print "initialize Finish!!\r\n"
     end
 
     ##
@@ -142,7 +143,7 @@ module Bosh::AwsCloud
     # @param [String] instance_id EC2 instance id
     def has_vm?(instance_id)
       with_thread_name("has_vm?(#{instance_id})") do
-        InstanceManager.new(region, registry).has_instance?(instance_id)
+         ret = @qingcloudsdk.describe_instances(instance_id)
       end
     end
 
@@ -334,7 +335,7 @@ module Bosh::AwsCloud
       actual_group_names = instance.security_groups.collect { |sg| sg.name }
       specified_group_names = extract_security_group_names(network_spec)
       if specified_group_names.empty?
-        new_group_names = Array(aws_properties["default_security_groups"])
+        new_group_names = Array(qingcloud_properties["default_security_groups"])
       else
         new_group_names = specified_group_names
       end
@@ -473,40 +474,41 @@ module Bosh::AwsCloud
       @agent_properties ||= options.fetch('agent', {})
     end
 
-    def aws_properties
-      @aws_properties ||= options.fetch('aws')
+    def qingcloud_properties
+      @qingcloud_properties ||= options.fetch('qingcloud')
     end
 
-    def aws_region
-      @aws_region ||= aws_properties.fetch('region', nil)
+    def qingcloud_region
+      @qingcloud_region ||= qingcloud_properties.fetch('region', nil)
     end
 
     def fast_path_delete?
-      aws_properties.fetch('fast_path_delete', false)
+      qingcloud_properties.fetch('fast_path_delete', false)
     end
 
-    def initialize_aws
-      aws_logger = logger
-      aws_params = {
-          access_key_id:     aws_properties['access_key_id'],
-          secret_access_key: aws_properties['secret_access_key'],
-          ec2_endpoint:      aws_properties['ec2_endpoint'] || default_ec2_endpoint,
-          elb_endpoint:      aws_properties['elb_endpoint'] || default_elb_endpoint,
-          max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
-          logger:            aws_logger
+    def initialize_qingcloud
+      qingcloud_logger = logger
+      qingcloud_params = {
+          region:            qingcloud_properties['region'],
+          access_key_id:     qingcloud_properties['access_key_id'],
+          secret_access_key: qingcloud_properties['secret_access_key'],
+          #ec2_endpoint:      qingcloud_properties['ec2_endpoint'] || default_ec2_endpoint,
+          #elb_endpoint:      aws_properties['elb_endpoint'] || default_elb_endpoint,
+          #max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
+          logger:             qingcloud_logger
       }
-
-      aws_params[:proxy_uri] = aws_properties['proxy_uri'] if aws_properties['proxy_uri']
+      @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
+      #aws_params[:proxy_uri] = aws_properties['proxy_uri'] if aws_properties['proxy_uri']
 
       # AWS Ruby SDK is threadsafe but Ruby autoload isn't,
       # so we need to trigger eager autoload while constructing CPI
-      AWS.eager_autoload!
+      #AWS.eager_autoload!
 
-      AWS.config(aws_params)
+      #AWS.config(aws_params)
 
-      @ec2 = AWS::EC2.new
-      @region = @ec2.regions[aws_region]
-      @az_selector = AvailabilityZoneSelector.new(@region, aws_properties['default_availability_zone'])
+      #@ec2 = AWS::EC2.new
+      #@region = @ec2.regions[aws_region]
+      #@az_selector = AvailabilityZoneSelector.new(@region, aws_properties['default_availability_zone'])
     end
 
     def initialize_registry
@@ -594,8 +596,8 @@ module Bosh::AwsCloud
     #
     def validate_options
       required_keys = {
-          "aws" => ["access_key_id", "secret_access_key", "region", "default_key_name"],
-          "registry" => ["endpoint", "user", "password"],
+          "qingcloud" => ["region", "access_key_id", "secret_access_key"],
+          #"registry" => ["endpoint", "user", "password"],
       }
 
       missing_keys = []
@@ -644,3 +646,4 @@ module Bosh::AwsCloud
     end
   end
 end
+

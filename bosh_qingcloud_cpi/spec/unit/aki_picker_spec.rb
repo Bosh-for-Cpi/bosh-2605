@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Bosh::AwsCloud::AKIPicker do
+describe Bosh::QingCloud::AKIPicker do
   let(:akis) {
     [
       double("image-1", :root_device_name => "/dev/sda1",
@@ -12,7 +12,7 @@ describe Bosh::AwsCloud::AKIPicker do
     ]
   }
   let(:logger) {double("logger", :info => nil)}
-  let(:picker) {Bosh::AwsCloud::AKIPicker.new(double("ec2"))}
+  let(:picker) {Bosh::QingCloud::AKIPicker.new(double("ec2"))}
 
   it "should pick the AKI with the highest version" do
     picker.should_receive(:logger).and_return(logger)

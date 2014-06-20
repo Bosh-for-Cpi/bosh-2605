@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   it 'deletes an EC2 instance' do
     instance_manager = double('InstanceManager')
@@ -14,7 +14,7 @@ describe Bosh::AwsCloud::Cloud do
       region = r
     end
 
-    Bosh::AwsCloud::InstanceManager.should_receive(:new).with(region, registry).and_return(instance_manager)
+    Bosh::QingCloud::InstanceManager.should_receive(:new).with(region, registry).and_return(instance_manager)
 
     ec2.delete_vm('i-foobar')
   end

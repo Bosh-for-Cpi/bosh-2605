@@ -1,20 +1,20 @@
 require 'spec_helper'
 
-describe Bosh::AwsCloud::StemcellCreator do
+describe Bosh::QingCloud::StemcellCreator do
 
   let(:region) { double("region", :name => "us-east-1") }
   let(:stemcell_properties) do
     {
         "name" => "stemcell-name",
         "version" => "0.7.0",
-        "infrastructure" => "aws",
+        "infrastructure" => "qingcloud",
         "architecture" =>  "x86_64",
         "root_device_name" => "/dev/sda1"
     }
   end
 
   before do
-    Bosh::AwsCloud::AKIPicker.stub(:new => double("aki", :pick => "aki-xxxxxxxx"))
+    Bosh::QingCloud::AKIPicker.stub(:new => double("aki", :pick => "aki-xxxxxxxx"))
   end
 
 
@@ -26,13 +26,13 @@ describe Bosh::AwsCloud::StemcellCreator do
 
     it "should create a real stemcell" do
       creator = described_class.new(region, stemcell_properties)
-      Bosh::AwsCloud::ResourceWait.stub(:for_snapshot).with(snapshot: snapshot, state: :completed)
-      Bosh::AwsCloud::ResourceWait.stub(:for_image).with(image: image, state: :available)
+      Bosh::QingCloud::ResourceWait.stub(:for_snapshot).with(snapshot: snapshot, state: :completed)
+      Bosh::QingCloud::ResourceWait.stub(:for_image).with(image: image, state: :available)
       region.stub_chain(:images, :create).and_return(image)
 
       creator.should_receive(:copy_root_image)
       volume.should_receive(:create_snapshot).and_return(snapshot)
-      Bosh::AwsCloud::TagManager.should_receive(:tag).with(image, "Name", "stemcell-name 0.7.0")
+      Bosh::QingCloud::TagManager.should_receive(:tag).with(image, "Name", "stemcell-name 0.7.0")
 
       stemcell = creator.create(volume, ebs_volume, "/path/to/image")
     end
@@ -46,7 +46,7 @@ describe Bosh::AwsCloud::StemcellCreator do
     it "should create a fake stemcell" do
       creator = described_class.new(region, stemcell_properties)
 
-      Bosh::AwsCloud::StemcellFinder.should_receive(:find_by_region_and_id).with(region, "ami-xxxxxxxx light")
+      Bosh::QingCloud::StemcellFinder.should_receive(:find_by_region_and_id).with(region, "ami-xxxxxxxx light")
       creator.fake
     end
 
@@ -112,7 +112,7 @@ describe Bosh::AwsCloud::StemcellCreator do
       creator.stub(:find_in_path => nil)
       result = double('result', :output => 'output')
 
-      stemcell_copy = File.expand_path("../../../../bosh_aws_cpi/scripts/stemcell-copy.sh", __FILE__)
+      stemcell_copy = File.expand_path("../../../../bosh_qingcloud_cpi/scripts/stemcell-copy.sh", __FILE__)
       cmd = "sudo -n #{stemcell_copy} /path/to/image /dev/volume 2>&1"
       creator.should_receive(:sh).with(cmd).and_return(result)
 

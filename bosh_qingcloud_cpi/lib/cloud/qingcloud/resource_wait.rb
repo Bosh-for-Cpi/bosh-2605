@@ -1,10 +1,10 @@
 require_relative 'helpers'
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class ResourceWait
     include Helpers
 
-    # a sane amount of retries on AWS (~25 minutes),
+    # a sane amount of retries on QingCloud (~25 minutes),
     # as things can take anywhere between a minute and forever
     DEFAULT_TRIES = 54
     MAX_SLEEP_EXPONENT = 5
@@ -17,8 +17,8 @@ module Bosh::AwsCloud
       validate_states(valid_states, target_state)
 
       ignored_errors = [
-        AWS::EC2::Errors::InvalidInstanceID::NotFound,
-        AWS::Core::Resource::NotFound
+        QingCloud::EC2::Errors::InvalidInstanceID::NotFound,
+        QingCloud::Core::Resource::NotFound
       ]
 
       new.for_resource(resource: instance, errors: ignored_errors, target_state: target_state) do |current_state|
@@ -39,7 +39,7 @@ module Bosh::AwsCloud
 
       ignored_errors = []
       if target_state == :attached
-        ignored_errors << AWS::Core::Resource::NotFound
+        ignored_errors << QingCloud::Core::Resource::NotFound
       end
       description = "volume %s to be %s to instance %s as device %s" % [
           attachment.volume.id, target_state, attachment.instance.id, attachment.device
@@ -48,8 +48,8 @@ module Bosh::AwsCloud
       new.for_resource(resource: attachment, errors: ignored_errors, target_state: target_state, description: description) do |current_state|
         current_state == target_state
       end
-    rescue AWS::Core::Resource::NotFound
-      # if an attachment is detached, AWS can reap the object and the reference is no longer found,
+    rescue QingCloud::Core::Resource::NotFound
+      # if an attachment is detached, QingCloud can reap the object and the reference is no longer found,
       # so consider this exception a success condition if we are detaching
       raise unless target_state == :detached
     end
@@ -62,14 +62,14 @@ module Bosh::AwsCloud
 
       ignored_errors = []
       if target_state == :available
-        ignored_errors = [AWS::EC2::Errors::InvalidAMIID::NotFound]
+        ignored_errors = [QingCloud::EC2::Errors::InvalidAMIID::NotFound]
       end
 
       new.for_resource(resource: image, errors: ignored_errors, target_state: target_state, state_method: :state) do |current_state|
         current_state == target_state
       end
-    rescue AWS::Core::Resource::NotFound
-      # if an AMI is deleted, AWS can reap the object and the reference is no longer found,
+    rescue QingCloud::Core::Resource::NotFound
+      # if an AMI is deleted, QingCloud can reap the object and the reference is no longer found,
       # so consider this exception a success condition if we are deleting
       raise unless target_state == :deleted
     end
@@ -83,8 +83,8 @@ module Bosh::AwsCloud
       new.for_resource(resource: volume, target_state: target_state) do |current_state|
         current_state == target_state
       end
-    rescue AWS::EC2::Errors::InvalidVolume::NotFound
-      # if an volume is deleted, AWS can reap the object and the reference is no longer found,
+    rescue QingCloud::EC2::Errors::InvalidVolume::NotFound
+      # if an volume is deleted, QingCloud can reap the object and the reference is no longer found,
       # so consider this exception a success condition if we are deleting
       raise unless target_state == :deleted
     end
@@ -106,7 +106,7 @@ module Bosh::AwsCloud
       valid_states = [:available]
       validate_states(valid_states, target_state)
 
-      ignored_errors = [AWS::EC2::Errors::InvalidSubnetID::NotFound]
+      ignored_errors = [QingCloud::EC2::Errors::InvalidSubnetID::NotFound]
 
       new.for_resource(resource: subnet, target_state: target_state, errors: ignored_errors, state_method: :state) do |current_state|
         current_state == target_state
@@ -133,8 +133,8 @@ module Bosh::AwsCloud
     def self.sleep_callback(description, tries)
       lambda do |num_tries, error|
         sleep_time = 2**[num_tries, MAX_SLEEP_EXPONENT].min # Exp backoff: 1, 2, 4, 8 ... up to max 32
-        Bosh::AwsCloud::ResourceWait.logger.debug("#{error.class}: `#{error.message}'") if error
-        Bosh::AwsCloud::ResourceWait.logger.debug("#{description}, retrying in #{sleep_time} seconds (#{num_tries}/#{tries})")
+        Bosh::QingCloud::ResourceWait.logger.debug("#{error.class}: `#{error.message}'") if error
+        Bosh::QingCloud::ResourceWait.logger.debug("#{description}, retrying in #{sleep_time} seconds (#{num_tries}/#{tries})")
         sleep_time
       end
     end
@@ -160,14 +160,14 @@ module Bosh::AwsCloud
       target_state = args.fetch(:target_state)
 
       sleep_cb = self.class.sleep_callback("Waiting for #{desc} to be #{target_state}", tries)
-      errors << AWS::EC2::Errors::RequestLimitExceeded
+      errors << QingCloud::EC2::Errors::RequestLimitExceeded
       ensure_cb = Proc.new do |retries|
         cloud_error("Timed out waiting for #{desc} to be #{target_state}, took #{time_passed}s") if retries == tries
       end
 
       state = nil
       Bosh::Retryable.new(tries: tries, sleep: sleep_cb, on: errors, ensure: ensure_cb).retryer do
-        Bosh::AwsCloud::ResourceWait.task_checkpoint
+        Bosh::QingCloud::ResourceWait.task_checkpoint
 
         state = resource.method(state_method).call
         if state == :error || state == :failed
@@ -178,9 +178,9 @@ module Bosh::AwsCloud
         blk.call(state)
       end
 
-      Bosh::AwsCloud::ResourceWait.logger.info("#{desc} is now #{state}, took #{time_passed}s")
+      Bosh::QingCloud::ResourceWait.logger.info("#{desc} is now #{state}, took #{time_passed}s")
     rescue Bosh::Common::RetryCountExceeded => e
-      Bosh::AwsCloud::ResourceWait.logger.error(
+      Bosh::QingCloud::ResourceWait.logger.error(
         "Timed out waiting for #{desc} state is #{state}, expected to be #{target_state}, took #{time_passed}s")
       raise e
     end

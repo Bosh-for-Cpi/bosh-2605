@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   let(:manual) { {"type" => "manual", 
                   "cloud_properties" => {"subnet" => "sn-xxxxxxxx", "security_groups" => %w[default]}} }

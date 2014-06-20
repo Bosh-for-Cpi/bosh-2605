@@ -1,4 +1,4 @@
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class StemcellCreator
     include Bosh::Exec
     include Helpers

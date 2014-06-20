@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
-
 # Copyright (c) 2009-2012 VMware, Inc.
 
 # Usage example:
 # irb(main):001:0> cpi.create_vm("test", "ami-809a48e9",
 #                  {"instance_type" => "m1.small"}, {}, [], {"foo" =>"bar"})
 
-require "bosh_aws_cpi"
+require 'psych'
+require "bosh_qingcloud_cpi"
 require "irb"
 require "irb/completion"
 require "ostruct"
@@ -26,10 +26,9 @@ unless config_file
 end
 
 @config = Psych.load_file(config_file)
-
 module ConsoleHelpers
   def cpi
-    @cpi ||= Bosh::AwsCloud::Cloud.new(@config)
+    @cpi ||= Bosh::QingCloud::Cloud.new(@config)
   end
 
   def ec2
@@ -42,7 +41,6 @@ module ConsoleHelpers
 end
 
 cloud_config = OpenStruct.new(:logger => Logger.new(STDOUT))
-
 Bosh::Clouds::Config.configure(cloud_config)
 
 include ConsoleHelpers
@@ -54,7 +52,6 @@ rescue LoadError
   puts "=> ruby-debug not found, debugger disabled"
 end
 
-puts "=> Welcome to BOSH AWS CPI console"
+puts "=> Welcome to BOSH QingCloud CPI console"
 puts "You can use 'cpi' to access CPI methods"
-
 IRB.start

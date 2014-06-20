@@ -1,22 +1,22 @@
-# BOSH AWS Cloud Provider Interface
+# BOSH QingCloud Cloud Provider Interface
 Copyright (c) 2009-2012 VMware, Inc.
 
-For online documentation see: http://rubydoc.info/gems/bosh_aws_cpi/
+For online documentation see: http://rubydoc.info/gems/bosh_qingcloud_cpi/
 
 ## Options
 
-These options are passed to the AWS CPI when it is instantiated.
+These options are passed to the QingCloud CPI when it is instantiated.
 
-### AWS options
+### QingCloud options
 
 * `access_key_id` (required)
-  AWS IAM user access key
+  QingCloud IAM user access key
 * `secret_access_key` (required)
-  AWS IAM secret access key
+  QingCloud IAM secret access key
 * `default_key_name` (required)
-  default AWS ssh key name to assign to created virtual machines
+  default QingCloud ssh key name to assign to created virtual machines
 * `default_security_groups` (required)
-  list of AWS security group to assign to created virtual machines
+  list of QingCloud security group to assign to created virtual machines
 * `ec2_private_key` (required)
   local path to the ssh private key, must match `default_key_name`
 * `region` (required)
@@ -28,11 +28,11 @@ These options are passed to the AWS CPI when it is instantiated.
   URL of the ELB endpoint to connect to, default to the endpoint corresponding to the selected region,
   or `default_elb_endpoint` if no region has been selected
 * `max_retries` (optional)
-  maximum number of time to retry an AWS API call, defaults to `DEFAULT_MAX_RETRIES`
+  maximum number of time to retry an QingCloud API call, defaults to `DEFAULT_MAX_RETRIES`
 
 ### Registry options
 
-The registry options are passed to the AWS CPI by the BOSH director based on the settings in `director.yml`, but can be
+The registry options are passed to the QingCloud CPI by the BOSH director based on the settings in `director.yml`, but can be
 overridden if needed.
 
 * `endpoint` (required)
@@ -44,7 +44,7 @@ overridden if needed.
 
 ### Agent options
 
-Agent options are passed to the AWS CPI by the BOSH director based on the settings in `director.yml`, but can be
+Agent options are passed to the QingCloud CPI by the BOSH director based on the settings in `director.yml`, but can be
 overridden if needed.
 
 ### Resource pool options
@@ -54,21 +54,21 @@ These options are specified under `cloud_options` in the `resource_pools` sectio
 * `availability_zone` (optional)
   the EC2 availability zone the VMs should be created in
 * `instance_type` (required)
-  which [type of instance](http://aws.amazon.com/ec2/instance-types/) the VMs should belong to
+  which [type of instance](http://qingcloud.amazon.com/ec2/instance-types/) the VMs should belong to
 * `spot_bid_price` (optional)
-  the [AWS spot instance](http://aws.amazon.com/ec2/purchasing-options/spot-instances/) bid price to use.  When specified spot instances are started rather than on demand instances.  _NB: this will dramatically slow down resource pool creation._
+  the [QingCloud spot instance](http://qingcloud.amazon.com/ec2/purchasing-options/spot-instances/) bid price to use.  When specified spot instances are started rather than on demand instances.  _NB: this will dramatically slow down resource pool creation._
 
 ### Network options
 
 These options are specified under `cloud_options` in the `networks` section of a BOSH deployment manifest.
 
 * `type` (required)
-  can be either `dynamic` for a DHCP assigned IP by AWS, or `vip` to use an Elastic IP (which needs to be already
+  can be either `dynamic` for a DHCP assigned IP by QingCloud, or `vip` to use an Elastic IP (which needs to be already
   allocated)
 
 ## Example
 
-This is a sample of how AWS specific properties are used in a BOSH deployment manifest:
+This is a sample of how QingCloud specific properties are used in a BOSH deployment manifest:
 
     ---
     name: sample
@@ -93,7 +93,7 @@ This is a sample of how AWS specific properties are used in a BOSH deployment ma
         network: default
         size: 3
         stemcell:
-          name: bosh-aws-xen-ubuntu
+          name: bosh-qingcloud-xen-ubuntu
           version: latest
         cloud_properties:
           instance_type: m1.small
@@ -101,7 +101,7 @@ This is a sample of how AWS specific properties are used in a BOSH deployment ma
     ...
 
     properties:
-      aws:
+      qingcloud:
         access_key_id: AKIAIYJWVDUP4KRWBESQ
         secret_access_key: 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
         default_key_name: bosh

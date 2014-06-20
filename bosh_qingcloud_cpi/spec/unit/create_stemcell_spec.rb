@@ -2,14 +2,14 @@
 
 require "spec_helper"
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
   before { @tmp_dir = Dir.mktmpdir }
   after { FileUtils.rm_rf(@tmp_dir) }
 
   describe "EBS-volume based flow" do
-    let(:creator) { double(Bosh::AwsCloud::StemcellCreator) }
+    let(:creator) { double(Bosh::QingCloud::StemcellCreator) }
 
-    before { Bosh::AwsCloud::StemcellCreator.stub(:new => creator) }
+    before { Bosh::QingCloud::StemcellCreator.stub(:new => creator) }
 
     context "fake stemcell" do
       let(:stemcell_properties) do

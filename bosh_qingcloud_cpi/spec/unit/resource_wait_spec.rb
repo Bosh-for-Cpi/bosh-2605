@@ -1,11 +1,11 @@
 require 'spec_helper'
 
-describe Bosh::AwsCloud::ResourceWait do
+describe Bosh::QingCloud::ResourceWait do
   before { Kernel.stub(:sleep) }
   before { described_class.stub(:task_checkpoint) }
 
   describe '.for_instance' do
-    let(:instance) { double(AWS::EC2::Instance, id: 'i-1234') }
+    let(:instance) { double(QingCloud::EC2::Instance, id: 'i-1234') }
 
     context 'deletion' do
       it 'should wait until the state is terminated' do
@@ -20,7 +20,7 @@ describe Bosh::AwsCloud::ResourceWait do
     context 'creation' do
       context 'when EC2 fails to find an instance' do
         it 'should wait until the state is running' do
-          instance.should_receive(:status).and_raise(AWS::EC2::Errors::InvalidInstanceID::NotFound)
+          instance.should_receive(:status).and_raise(QingCloud::EC2::Errors::InvalidInstanceID::NotFound)
           instance.should_receive(:status).and_return(:pending)
           instance.should_receive(:status).and_return(:running)
 
@@ -30,7 +30,7 @@ describe Bosh::AwsCloud::ResourceWait do
 
       context 'when resource is not found' do
         it 'should wait until the state is running' do
-          instance.should_receive(:status).and_raise(AWS::Core::Resource::NotFound)
+          instance.should_receive(:status).and_raise(QingCloud::Core::Resource::NotFound)
           instance.should_receive(:status).and_return(:pending)
           instance.should_receive(:status).and_return(:running)
 
@@ -38,7 +38,7 @@ describe Bosh::AwsCloud::ResourceWait do
         end
       end
 
-      it 'should fail if AWS terminates the instance' do
+      it 'should fail if QingCloud terminates the instance' do
         instance.should_receive(:status).and_return(:pending)
         instance.should_receive(:status).and_return(:pending)
         instance.should_receive(:status).and_return(:terminated)
@@ -51,9 +51,9 @@ describe Bosh::AwsCloud::ResourceWait do
   end
 
   describe '.for_attachment' do
-    let(:volume) { double(AWS::EC2::Volume, id: 'vol-1234') }
-    let(:instance) { double(AWS::EC2::Instance, id: 'i-5678') }
-    let(:attachment) { double(AWS::EC2::Attachment, volume: volume, instance: instance, device: '/dev/sda1') }
+    let(:volume) { double(QingCloud::EC2::Volume, id: 'vol-1234') }
+    let(:instance) { double(QingCloud::EC2::Instance, id: 'i-5678') }
+    let(:attachment) { double(QingCloud::EC2::Attachment, volume: volume, instance: instance, device: '/dev/sda1') }
 
     context 'attachment' do
       it 'should wait until the state is attached' do
@@ -63,8 +63,8 @@ describe Bosh::AwsCloud::ResourceWait do
         described_class.for_attachment(attachment: attachment, state: :attached)
       end
 
-      it 'should retry when AWS::Core::Resource::NotFound is raised' do
-        attachment.should_receive(:status).and_raise(AWS::Core::Resource::NotFound)
+      it 'should retry when QingCloud::Core::Resource::NotFound is raised' do
+        attachment.should_receive(:status).and_raise(QingCloud::Core::Resource::NotFound)
         attachment.should_receive(:status).and_return(:attached)
 
         described_class.for_attachment(attachment: attachment, state: :attached)
@@ -79,9 +79,9 @@ describe Bosh::AwsCloud::ResourceWait do
         described_class.for_attachment(attachment: attachment, state: :detached)
       end
 
-      it 'should consider AWS::Core::Resource::NotFound to be detached' do
+      it 'should consider QingCloud::Core::Resource::NotFound to be detached' do
         attachment.should_receive(:status).and_return(:detaching)
-        attachment.should_receive(:status).and_raise(AWS::Core::Resource::NotFound)
+        attachment.should_receive(:status).and_raise(QingCloud::Core::Resource::NotFound)
 
         described_class.for_attachment(attachment: attachment, state: :detached)
       end
@@ -89,7 +89,7 @@ describe Bosh::AwsCloud::ResourceWait do
   end
 
   describe '.for_volume' do
-    let(:volume) { double(AWS::EC2::Volume, id: 'v-123') }
+    let(:volume) { double(QingCloud::EC2::Volume, id: 'v-123') }
 
     context 'creation' do
       it 'should wait until the state is available' do
@@ -119,7 +119,7 @@ describe Bosh::AwsCloud::ResourceWait do
 
       it 'should consider InvalidVolume error to mean deleted' do
         volume.should_receive(:status).and_return(:deleting)
-        volume.should_receive(:status).and_raise(AWS::EC2::Errors::InvalidVolume::NotFound)
+        volume.should_receive(:status).and_raise(QingCloud::EC2::Errors::InvalidVolume::NotFound)
 
         described_class.for_volume(volume: volume, state: :deleted)
       end
@@ -127,7 +127,7 @@ describe Bosh::AwsCloud::ResourceWait do
   end
 
   describe '.for_snapshot' do
-    let(:snapshot) { double(AWS::EC2::Snapshot, id: 'snap-123') }
+    let(:snapshot) { double(QingCloud::EC2::Snapshot, id: 'snap-123') }
 
     context 'creation' do
       it 'should wait until the state is completed' do
@@ -149,7 +149,7 @@ describe Bosh::AwsCloud::ResourceWait do
   end
 
   describe '.for_image' do
-    let(:image) { double(AWS::EC2::Image, id: 'ami-123') }
+    let(:image) { double(QingCloud::EC2::Image, id: 'ami-123') }
 
     context 'creation' do
       it 'should wait until the state is available' do
@@ -159,8 +159,8 @@ describe Bosh::AwsCloud::ResourceWait do
         described_class.for_image(image: image, state: :available)
       end
 
-      it 'should wait if AWS::EC2::Errors::InvalidAMIID::NotFound raised' do
-        image.should_receive(:state).and_raise(AWS::EC2::Errors::InvalidAMIID::NotFound)
+      it 'should wait if QingCloud::EC2::Errors::InvalidAMIID::NotFound raised' do
+        image.should_receive(:state).and_raise(QingCloud::EC2::Errors::InvalidAMIID::NotFound)
         image.should_receive(:state).and_return(:pending)
         image.should_receive(:state).and_return(:available)
 
@@ -189,7 +189,7 @@ describe Bosh::AwsCloud::ResourceWait do
   end
 
   describe '.for_subnet' do
-    let(:subnet) { double(AWS::EC2::Subnet, id: 'subnet-123') }
+    let(:subnet) { double(QingCloud::EC2::Subnet, id: 'subnet-123') }
 
     context 'creation' do
       it 'should wait until the state is completed' do

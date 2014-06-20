@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Bosh::AwsCloud::Helpers do
+describe Bosh::QingCloud::Helpers do
 
 
   describe "#extract_security_group_names" do
@@ -16,7 +16,7 @@ describe Bosh::AwsCloud::Helpers do
 
     it "should return a sorted list of unique security_group_names" do
       class HelpersTester
-        include Bosh::AwsCloud::Helpers
+        include Bosh::QingCloud::Helpers
       end
 
       helpers_tester = HelpersTester.new

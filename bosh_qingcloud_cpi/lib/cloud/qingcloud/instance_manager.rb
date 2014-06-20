@@ -1,7 +1,7 @@
 require "common/common"
 require "time"
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class InstanceManager
     include Helpers
 
@@ -21,8 +21,8 @@ module Bosh::AwsCloud
       @instance_params[:image_id] = stemcell_id
       @instance_params[:instance_type] = resource_pool["instance_type"]
       set_user_data_parameter(networks_spec)
-      set_key_name_parameter(resource_pool["key_name"], options["aws"]["default_key_name"])
-      set_security_groups_parameter(networks_spec, options["aws"]["default_security_groups"])
+      set_key_name_parameter(resource_pool["key_name"], options["qingcloud"]["default_key_name"])
+      set_security_groups_parameter(networks_spec, options["qingcloud"]["default_security_groups"])
       set_vpc_parameters(networks_spec)
       set_availability_zone_parameter(
           (disk_locality || []).map { |volume_id| @region.volumes[volume_id].availability_zone.to_s },
@@ -46,10 +46,10 @@ module Bosh::AwsCloud
         wait_for_spot_instance_request_to_be_active spot_instance_requests
       else
         # Retry the create instance operation a couple of times if we are told that the IP
-        # address is in use - it can happen when the director recreates a VM and AWS
+        # address is in use - it can happen when the director recreates a VM and QingCloud
         # is too slow to update its state when we have released the IP address and want to
         # realocate it again.
-        errors = [AWS::EC2::Errors::InvalidIPAddress::InUse]
+        errors = [QingCloud::EC2::Errors::InvalidIPAddress::InUse]
         Bosh::Common.retryable(sleep: instance_create_wait_time, tries: 10, on: errors) do |tries, error|
           @logger.info("Launching on demand instance...") 
           @logger.warn("IP address was in use: #{error}") if tries > 0
@@ -102,9 +102,9 @@ module Bosh::AwsCloud
 
     def wait_for_spot_instance_request_to_be_active(spot_instance_requests)
       # Query the spot request state until it becomes "active".
-      # This can result in the errors listed below; this is normally because AWS has 
+      # This can result in the errors listed below; this is normally because QingCloud has
       # been slow to update its state so the correct response is to wait a bit and try again.
-      errors = [AWS::EC2::Errors::InvalidSpotInstanceRequestID::NotFound]
+      errors = [QingCloud::EC2::Errors::InvalidSpotInstanceRequestID::NotFound]
       Bosh::Common.retryable(sleep: instance_create_wait_time*2, tries: 20, on: errors) do |tries, error|
           @logger.warn("Retrying after expected error: #{error}") if error
           @logger.debug("Checking state of spot instance requests...")
@@ -127,7 +127,7 @@ module Bosh::AwsCloud
 
       begin
         instance.terminate
-      rescue AWS::EC2::Errors::InvalidInstanceID::NotFound => e
+      rescue QingCloud::EC2::Errors::InvalidInstanceID::NotFound => e
         @logger.info("Failed to terminate instance because it was not found: #{e.inspect}")
         raise Bosh::Clouds::VMNotFound, "VM `#{instance_id}' not found"
       ensure
@@ -144,7 +144,7 @@ module Bosh::AwsCloud
       begin
         @logger.info("Deleting instance '#{instance.id}'")
         ResourceWait.for_instance(instance: instance, state: :terminated)
-      rescue AWS::EC2::Errors::InvalidInstanceID::NotFound
+      rescue QingCloud::EC2::Errors::InvalidInstanceID::NotFound
         # It's OK, just means that instance has already been deleted
       end
     end
@@ -166,7 +166,7 @@ module Bosh::AwsCloud
     end
 
     def attach_to_load_balancers
-      elb = AWS::ELB.new
+      elb = QingCloud::ELB.new
 
       elbs.each do |load_balancer|
         lb = elb.load_balancers[load_balancer]
@@ -183,19 +183,19 @@ module Bosh::AwsCloud
     end
 
     def remove_from_load_balancers
-      elb = AWS::ELB.new
+      elb = QingCloud::ELB.new
 
       elb.load_balancers.each do |load_balancer|
         begin
           load_balancer.instances.deregister(instance)
-        rescue AWS::ELB::Errors::InvalidInstance
+        rescue QingCloud::ELB::Errors::InvalidInstance
           # ignore this, as it just means it wasn't registered
         end
       end
     end
 
-    def set_key_name_parameter(resource_pool_key_name, default_aws_key_name)
-      key_name = resource_pool_key_name || default_aws_key_name
+    def set_key_name_parameter(resource_pool_key_name, default_qingcloud_key_name)
+      key_name = resource_pool_key_name || default_qingcloud_key_name
       instance_params[:key_name] = key_name unless key_name.nil?
     end
 

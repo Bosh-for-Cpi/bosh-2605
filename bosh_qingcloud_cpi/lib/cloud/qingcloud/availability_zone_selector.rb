@@ -1,4 +1,4 @@
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class AvailabilityZoneSelector
     attr_accessor :region
 

@@ -26,6 +26,7 @@ module Bosh::Dev
         bosh_common
         bosh_cpi
         bosh_openstack_cpi
+        bosh_qingcloud_cpi
         bosh-registry
         bosh_vsphere_cpi
         bosh_warden_cpi

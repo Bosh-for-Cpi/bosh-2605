@@ -1,8 +1,8 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   ##
-  # Represents AWS instance network config. EC2 instance has single NIC
+  # Represents QingCloud instance network config. EC2 instance has single NIC
   # with dynamic IP address and (optionally) a single elastic IP address
   # which instance itself is not aware of (vip). Thus we should perform
   # a number of sanity checks for the network spec provided by director
@@ -45,7 +45,7 @@ module Bosh::AwsCloud
             @vip_network = VipNetwork.new(name, network_spec)
 
           else
-            cloud_error("Invalid network type '#{network_type}' for AWS, " \
+            cloud_error("Invalid network type '#{network_type}' for QingCloud, " \
                         "can only handle 'dynamic', 'vip', or 'manual' network types")
         end
       end
@@ -68,8 +68,8 @@ module Bosh::AwsCloud
     end
 
     # Applies network configuration to the vm
-    # @param [AWS:EC2] ec2 instance EC2 client
-    # @param [AWS::EC2::Instance] instance EC2 instance to configure
+    # @param [QingCloud:EC2] ec2 instance EC2 client
+    # @param [QingCloud::EC2::Instance] instance EC2 instance to configure
     def configure(ec2, instance)
       if @vip_network
         @vip_network.configure(ec2, instance)

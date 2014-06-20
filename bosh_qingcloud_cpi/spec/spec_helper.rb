@@ -1,10 +1,10 @@
 require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
 
 require 'tmpdir'
-require 'cloud/aws'
+require 'cloud/qingcloud'
 
-MOCK_AWS_ACCESS_KEY_ID = 'foo'
-MOCK_AWS_SECRET_ACCESS_KEY = 'bar'
+MOCK_QingCloud_ACCESS_KEY_ID = 'foo'
+MOCK_QingCloud_SECRET_ACCESS_KEY = 'bar'
 
 def internal_to(*args, &block)
   example = describe *args, &block
@@ -22,11 +22,11 @@ end
 
 def mock_cloud_options
   {
-    'plugin' => 'aws',
+    'plugin' => 'qingcloud',
     'properties' => {
-      'aws' => {
-        'access_key_id' => MOCK_AWS_ACCESS_KEY_ID,
-        'secret_access_key' => MOCK_AWS_SECRET_ACCESS_KEY,
+      'qingcloud' => {
+        'access_key_id' => MOCK_QingCloud_ACCESS_KEY_ID,
+        'secret_access_key' => MOCK_QingCloud_SECRET_ACCESS_KEY,
         'region' => 'us-east-1',
         'default_key_name' => 'sesame',
         'default_security_groups' => []
@@ -45,7 +45,7 @@ def mock_cloud_options
 end
 
 def make_cloud(options = nil)
-  Bosh::AwsCloud::Cloud.new(options || mock_cloud_options['properties'])
+  Bosh::QingCloud::Cloud.new(options || mock_cloud_options['properties'])
 end
 
 def mock_registry(endpoint = 'http://registry:3333')
@@ -56,20 +56,20 @@ end
 
 def mock_cloud(options = nil)
   ec2, region = mock_ec2
-  AWS::EC2.stub(:new).and_return(ec2)
+  QingCloud::EC2.stub(:new).and_return(ec2)
 
   yield ec2, region if block_given?
 
-  Bosh::AwsCloud::Cloud.new(options || mock_cloud_options['properties'])
+  Bosh::QingCloud::Cloud.new(options || mock_cloud_options['properties'])
 end
 
 def mock_ec2
-  region = double(AWS::EC2::Region)
-  ec2 = double(AWS::EC2,
-               :instances => double(AWS::EC2::InstanceCollection),
-               :volumes => double(AWS::EC2::VolumeCollection),
-               :images => double(AWS::EC2::ImageCollection),
-               :regions => double(AWS::EC2::RegionCollection, :[] => region))
+  region = double(QingCloud::EC2::Region)
+  ec2 = double(QingCloud::EC2,
+               :instances => double(QingCloud::EC2::InstanceCollection),
+               :volumes => double(QingCloud::EC2::VolumeCollection),
+               :images => double(QingCloud::EC2::ImageCollection),
+               :regions => double(QingCloud::EC2::RegionCollection, :[] => region))
 
   yield ec2, region if block_given?
 

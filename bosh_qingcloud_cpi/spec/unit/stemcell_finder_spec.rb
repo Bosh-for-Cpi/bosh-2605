@@ -1,11 +1,11 @@
 require 'spec_helper'
-require 'cloud/aws/stemcell_finder'
+require 'cloud/qingcloud/stemcell_finder'
 
-module Bosh::AwsCloud
+module Bosh::QingCloud
   describe StemcellFinder do
     describe '.find_by_region_and_id' do
       context 'when id ends with " light"' do
-        let(:region) { double('aws region') }
+        let(:region) { double('qingcloud region') }
         let(:stemcell) { double('heavy stemcell') }
         before { Stemcell.stub(:find).with(region, 'ami-id').and_return(stemcell) }
 
@@ -28,7 +28,7 @@ module Bosh::AwsCloud
       context 'when id does not end with " light"' do
         it 'constructs a heavy stemcell' do
           stemcell = double('heavy stemcell')
-          region = double('aws region')
+          region = double('qingcloud region')
 
           Stemcell.should_receive(:find).with(region, 'ami-id').and_return(stemcell)
 

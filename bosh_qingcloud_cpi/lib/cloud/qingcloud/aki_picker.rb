@@ -1,7 +1,7 @@
-module Bosh::AwsCloud
+module Bosh::QingCloud
   class AKIPicker
 
-    # @param [AWS::Core::ServiceInterface] region
+    # @param [QingCloud::Core::ServiceInterface] region
     def initialize(region)
       @region = region
     end
@@ -44,7 +44,7 @@ module Bosh::AwsCloud
       end
     end
 
-    # @param [AWS::EC2::ImageCollection] akis
+    # @param [QingCloud::EC2::ImageCollection] akis
     def pick_candidate(akis, root_device_name)
       candidate = nil
       major = 0

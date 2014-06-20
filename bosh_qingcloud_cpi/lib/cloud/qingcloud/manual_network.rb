@@ -1,4 +1,4 @@
-module Bosh::AwsCloud
+module Bosh::QingCloud
   ##
   #
   class ManualNetwork < Network

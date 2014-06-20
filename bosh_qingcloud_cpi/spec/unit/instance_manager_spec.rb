@@ -1,42 +1,42 @@
 require "spec_helper"
 
-describe Bosh::AwsCloud::InstanceManager do
+describe Bosh::QingCloud::InstanceManager do
   let(:registry) { double("registry", :endpoint => "http://...", :update_settings => nil) }
   let(:region) { mock_ec2 }
 
   describe "#has_instance?" do
     let(:instance_id) { "instance id" }
-    let(:availability_zone_selector) { double(Bosh::AwsCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
+    let(:availability_zone_selector) { double(Bosh::QingCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
 
-    let(:fake_aws_instance) { double("aws_instance", id: instance_id) }
+    let(:fake_qingcloud_instance) { double("qingcloud_instance", id: instance_id) }
     let(:instance_manager) { described_class.new(region, registry, availability_zone_selector) }
 
     before do
-      region.stub_chain(:instances, :[]).with(instance_id).and_return(fake_aws_instance)
+      region.stub_chain(:instances, :[]).with(instance_id).and_return(fake_qingcloud_instance)
     end
 
     it "returns false if instance does not exist" do
-      expect(fake_aws_instance).to receive(:exists?).and_return(false)
+      expect(fake_qingcloud_instance).to receive(:exists?).and_return(false)
       expect(instance_manager.has_instance?(instance_id)).to be(false)
     end
 
     it "returns true if instance does exist" do
-      expect(fake_aws_instance).to receive(:exists?).and_return(true)
-      expect(fake_aws_instance).to receive(:status).and_return(:running)
+      expect(fake_qingcloud_instance).to receive(:exists?).and_return(true)
+      expect(fake_qingcloud_instance).to receive(:status).and_return(:running)
       expect(instance_manager.has_instance?(instance_id)).to be(true)
     end
 
     it "returns false if instance exists but is terminated" do
-      expect(fake_aws_instance).to receive(:exists?).and_return(true)
-      expect(fake_aws_instance).to receive(:status).and_return(:terminated)
+      expect(fake_qingcloud_instance).to receive(:exists?).and_return(true)
+      expect(fake_qingcloud_instance).to receive(:status).and_return(:terminated)
       expect(instance_manager.has_instance?(instance_id)).to be(false)
     end
   end
 
   describe "#create" do
-    let(:availability_zone_selector) { double(Bosh::AwsCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
-    let(:fake_aws_subnet) { double(AWS::EC2::Subnet).as_null_object }
-    let(:aws_instance_params) do
+    let(:availability_zone_selector) { double(Bosh::QingCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
+    let(:fake_qingcloud_subnet) { double(QingCloud::EC2::Subnet).as_null_object }
+    let(:qingcloud_instance_params) do
       {
           count: 1,
           image_id: "stemcell-id",
@@ -44,21 +44,21 @@ describe Bosh::AwsCloud::InstanceManager do
           user_data: "{\"registry\":{\"endpoint\":\"http://...\"},\"dns\":{\"nameserver\":\"foo\"}}",
           key_name: "bar",
           security_groups: ["baz"],
-          subnet: fake_aws_subnet,
+          subnet: fake_qingcloud_subnet,
           private_ip_address: "1.2.3.4",
           availability_zone: "us-east-1a"
       }
     end
-    let(:aws_instances) { double(AWS::EC2::InstanceCollection) }
-    let(:instance) { double(AWS::EC2::Instance, id: 'i-12345678') }
-    let(:aws_client) { double(AWS::EC2::Client) }
+    let(:qingcloud_instances) { double(QingCloud::EC2::InstanceCollection) }
+    let(:instance) { double(QingCloud::EC2::Instance, id: 'i-12345678') }
+    let(:qingcloud_client) { double(QingCloud::EC2::Client) }
 
-    it "should ask AWS to create an instance in the given region, with parameters built up from the given arguments" do
-      allow(region).to receive(:instances).and_return(aws_instances)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_aws_subnet})
+    it "should ask QingCloud to create an instance in the given region, with parameters built up from the given arguments" do
+      allow(region).to receive(:instances).and_return(qingcloud_instances)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
 
-      expect(aws_instances).to receive(:create).with(aws_instance_params).and_return(instance)
-      allow(Bosh::AwsCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
+      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_return(instance)
+      allow(Bosh::QingCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
 
       instance_manager = described_class.new(region, registry, availability_zone_selector)
 
@@ -79,17 +79,17 @@ describe Bosh::AwsCloud::InstanceManager do
       }
       disk_locality = nil
       environment = nil
-      options = {"aws" => {"region" => "us-east-1"}}
+      options = {"qingcloud" => {"region" => "us-east-1"}}
       instance_manager.create(agent_id, stemcell_id, resource_pool, networks_spec, disk_locality, environment, options)
     end
 
-    it "should ask AWS to create a SPOT instance in the given region, when resource_pool includes spot_bid_price" do
-      allow(region).to receive(:client).and_return(aws_client)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_aws_subnet})
+    it "should ask QingCloud to create a SPOT instance in the given region, when resource_pool includes spot_bid_price" do
+      allow(region).to receive(:client).and_return(qingcloud_client)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
       allow(region).to receive(:instances).and_return( {'i-12345678' => instance } )
 
       #need to translate security group names to security group ids
-      sg1 = double(AWS::EC2::SecurityGroup, security_group_id:"sg-baz-1234")
+      sg1 = double(QingCloud::EC2::SecurityGroup, security_group_id:"sg-baz-1234")
       allow(sg1).to receive(:name).and_return("baz")
       allow(region).to receive(:security_groups).and_return([sg1])
 
@@ -109,16 +109,16 @@ describe Bosh::AwsCloud::InstanceManager do
       }
       disk_locality = nil
       environment = nil
-      options = {"aws" => {"region" => "us-east-1"}}
+      options = {"qingcloud" => {"region" => "us-east-1"}}
 
       #NB: The spot_bid_price param should trigger spot instance creation
       resource_pool = {"spot_bid_price"=>0.15, "instance_type" => "m1.small", "key_name" => "bar"}
 
       #Should not recieve an ondemand instance create call
-      expect(aws_instances).to_not receive(:create).with(aws_instance_params)
+      expect(qingcloud_instances).to_not receive(:create).with(qingcloud_instance_params)
 
       #Should rather recieve a spot instance request
-      expect(aws_client).to receive(:request_spot_instances) do |spot_request|
+      expect(qingcloud_client).to receive(:request_spot_instances) do |spot_request|
         expect(spot_request[:spot_price]).to eq("0.15")
         expect(spot_request[:instance_count]).to eq(1)
         #expect(spot_request[:valid_until]).to  #TODO - not sure how to test this
@@ -129,7 +129,7 @@ describe Bosh::AwsCloud::InstanceManager do
           :user_data=>Base64.encode64("{\"registry\":{\"endpoint\":\"http://...\"},\"dns\":{\"nameserver\":\"foo\"}}"),
           :placement=> { :availability_zone=>"us-east-1a" }, 
           :network_interfaces=>[ { 
-            :subnet_id=>fake_aws_subnet,
+            :subnet_id=>fake_qingcloud_subnet,
             :groups=>["sg-baz-1234"], 
             :device_index=>0, 
             :private_ip_address=>"1.2.3.4"
@@ -144,12 +144,12 @@ describe Bosh::AwsCloud::InstanceManager do
       end
 
       # Should poll the spot instance request until state is active
-      expect(aws_client).to receive(:describe_spot_instance_requests) \
+      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
         .and_return({ :spot_instance_request_set => [ {:state => "active", :instance_id=>"i-12345678"} ] })
        
       # Should then wait for instance to be running, just like in the case of on deman
-      expect(Bosh::AwsCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
+      expect(Bosh::QingCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
 
       # Trigger spot instance request
       instance_manager = described_class.new(region, registry, availability_zone_selector)
@@ -157,20 +157,20 @@ describe Bosh::AwsCloud::InstanceManager do
 
     end
 
-    it "should retry checking spot instance request state when AWS::EC2::Errors::InvalidSpotInstanceRequestID::NotFound raised" do
+    it "should retry checking spot instance request state when QingCloud::EC2::Errors::InvalidSpotInstanceRequestID::NotFound raised" do
       spot_instance_requests = {
         :spot_instance_request_set => [ { :spot_instance_request_id=>"sir-12345c", :other_params_here => "which aren't used" }], 
         :request_id => "request-id-12345"
       }
       
-      allow(region).to receive(:client).and_return(aws_client)
+      allow(region).to receive(:client).and_return(qingcloud_client)
       allow(region).to receive(:instances).and_return( {'i-12345678' => instance } )
 
       #Simulate first recieving an error when asking for spot request state
-      expect(aws_client).to receive(:describe_spot_instance_requests) \
+      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
-        .and_raise(AWS::EC2::Errors::InvalidSpotInstanceRequestID::NotFound)
-      expect(aws_client).to receive(:describe_spot_instance_requests) \
+        .and_raise(QingCloud::EC2::Errors::InvalidSpotInstanceRequestID::NotFound)
+      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
         .and_return({ :spot_instance_request_set => [ {:state => "active", :instance_id=>"i-12345678"} ] })
 
@@ -181,13 +181,13 @@ describe Bosh::AwsCloud::InstanceManager do
       }.to_not raise_error
     end
 
-    it "should retry creating the VM when AWS::EC2::Errors::InvalidIPAddress::InUse raised" do
-      allow(region).to receive(:instances).and_return(aws_instances)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_aws_subnet})
+    it "should retry creating the VM when QingCloud::EC2::Errors::InvalidIPAddress::InUse raised" do
+      allow(region).to receive(:instances).and_return(qingcloud_instances)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
 
-      expect(aws_instances).to receive(:create).with(aws_instance_params).and_raise(AWS::EC2::Errors::InvalidIPAddress::InUse)
-      expect(aws_instances).to receive(:create).with(aws_instance_params).and_return(instance)
-      allow(Bosh::AwsCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
+      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_raise(QingCloud::EC2::Errors::InvalidIPAddress::InUse)
+      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_return(instance)
+      allow(Bosh::QingCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
       
       instance_manager = described_class.new(region, registry, availability_zone_selector)
       allow(instance_manager).to receive(:instance_create_wait_time).and_return(0)
@@ -209,7 +209,7 @@ describe Bosh::AwsCloud::InstanceManager do
       }
       disk_locality = nil
       environment = nil
-      options = {"aws" => {"region" => "us-east-1"}}
+      options = {"qingcloud" => {"region" => "us-east-1"}}
       instance_manager.create(agent_id, stemcell_id, resource_pool, networks_spec, disk_locality, environment, options)
     end
   end
@@ -252,7 +252,7 @@ describe Bosh::AwsCloud::InstanceManager do
       end
 
       context "when the networks specs have no security groups specified" do
-        it "returns the list of default AWS group names" do
+        it "returns the list of default QingCloud group names" do
           instance_manager = described_class.new(region, registry)
           instance_manager.set_security_groups_parameter(
               {"network" => {"cloud_properties" => {"foo" => "bar"}}},
@@ -266,10 +266,10 @@ describe Bosh::AwsCloud::InstanceManager do
     end
 
     describe "#set_vpc_parameters" do
-      let(:fake_aws_subnet) { double("aws_subnet") }
+      let(:fake_qingcloud_subnet) { double("qingcloud_subnet") }
 
       before do
-        allow(region).to receive(:subnets).and_return({"sub-123456" => fake_aws_subnet})
+        allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
       end
 
       context "when there is not a manual network in the specs" do
@@ -403,7 +403,7 @@ describe Bosh::AwsCloud::InstanceManager do
     end
 
     describe "#set_availability_zone_parameter" do
-      let(:availability_zone_selector) { double(Bosh::AwsCloud::AvailabilityZoneSelector) }
+      let(:availability_zone_selector) { double(Bosh::QingCloud::AvailabilityZoneSelector) }
 
       context "if there is a common availability zone specified" do
         before do
@@ -463,30 +463,30 @@ describe Bosh::AwsCloud::InstanceManager do
 
   describe "#terminate" do
     let(:instance_id) { "i-123456" }
-    let(:fake_aws_instance) { double("aws_instance", id: instance_id) }
+    let(:fake_qingcloud_instance) { double("qingcloud_instance", id: instance_id) }
     let(:instance_manager) { described_class.new(region, registry) }
 
     it "should terminate an instance given the id" do
       allow(instance_manager).to receive(:remove_from_load_balancers)
 
-      expect(fake_aws_instance).to receive(:terminate)
+      expect(fake_qingcloud_instance).to receive(:terminate)
       expect(registry).to receive(:delete_settings).with(instance_id)
 
-      allow(region).to receive(:instances).and_return({instance_id => fake_aws_instance})
-      allow(Bosh::AwsCloud::ResourceWait).to receive(:for_instance).with(instance: fake_aws_instance, state: :terminated)
+      allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
+      allow(Bosh::QingCloud::ResourceWait).to receive(:for_instance).with(instance: fake_qingcloud_instance, state: :terminated)
 
       instance_manager.terminate(instance_id)
     end
 
-    context "when instance was deleted in AWS and no longer exists (showing in AWS console)" do
+    context "when instance was deleted in QingCloud and no longer exists (showing in QingCloud console)" do
       before do
-        # AWS SDK always returns an object even if instance no longer exists
-        allow(region).to receive(:instances).with(no_args).and_return({instance_id => fake_aws_instance})
+        # QingCloud SDK always returns an object even if instance no longer exists
+        allow(region).to receive(:instances).with(no_args).and_return({instance_id => fake_qingcloud_instance})
 
-        # AWS returns NotFound error if instance no longer exists in AWS console
+        # QingCloud returns NotFound error if instance no longer exists in QingCloud console
         # (This could happen when instance was deleted manually and BOSH is not aware of that)
-        allow(fake_aws_instance).to receive(:terminate).
-          with(no_args).and_raise(AWS::EC2::Errors::InvalidInstanceID::NotFound)
+        allow(fake_qingcloud_instance).to receive(:terminate).
+          with(no_args).and_raise(QingCloud::EC2::Errors::InvalidInstanceID::NotFound)
       end
 
       it "raises Bosh::Clouds::VMNotFound but still removes settings from registry and removes instance from the load balancers" do
@@ -504,12 +504,12 @@ describe Bosh::AwsCloud::InstanceManager do
       it "should do a fast path delete when requested" do
         allow(instance_manager).to receive(:remove_from_load_balancers)
 
-        allow(region).to receive(:instances).and_return({instance_id => fake_aws_instance})
-        allow(fake_aws_instance).to receive(:terminate)
+        allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
+        allow(fake_qingcloud_instance).to receive(:terminate)
         allow(registry).to receive(:delete_settings)
 
-        allow(Bosh::AwsCloud::ResourceWait).to receive(:for_volume).with(instrance: fake_aws_instance, state: :terminated)
-        expect(Bosh::AwsCloud::TagManager).to receive(:tag).with(fake_aws_instance, "Name", "to be deleted")
+        allow(Bosh::QingCloud::ResourceWait).to receive(:for_volume).with(instrance: fake_qingcloud_instance, state: :terminated)
+        expect(Bosh::QingCloud::TagManager).to receive(:tag).with(fake_qingcloud_instance, "Name", "to be deleted")
 
         instance_manager.terminate(instance_id, true)
       end
@@ -518,14 +518,14 @@ describe Bosh::AwsCloud::InstanceManager do
 end
 
   describe "#reboot" do
-    let(:fake_aws_instance) { double("aws_instance") }
+    let(:fake_qingcloud_instance) { double("qingcloud_instance") }
     let(:instance_id) { "i-123456" }
     let(:instance_manager) { described_class.new(region, registry) }
 
     it "should reboot the instance" do
-      expect(fake_aws_instance).to receive(:reboot)
+      expect(fake_qingcloud_instance).to receive(:reboot)
 
-      allow(region).to receive(:instances).and_return({instance_id => fake_aws_instance})
+      allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
 
       instance_manager.reboot(instance_id)
     end
@@ -541,10 +541,10 @@ end
       allow(l).to receive(:[]).and_return(lb)
       l
     end
-    let(:elb) { double(AWS::ELB, :load_balancers => load_balancers) }
+    let(:elb) { double(QingCloud::ELB, :load_balancers => load_balancers) }
 
     before(:each) do
-      allow(AWS::ELB).to receive(:new).and_return(elb)
+      allow(QingCloud::ELB).to receive(:new).and_return(elb)
       allow(elb).to receive(:[]).and_return(lb)
       allow(instance_manager).to receive(:instance).and_return(instance)
     end

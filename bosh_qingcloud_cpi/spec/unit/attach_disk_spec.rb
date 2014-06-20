@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe Bosh::AwsCloud::Cloud do
+describe Bosh::QingCloud::Cloud do
 
   before(:each) do
     @registry = mock_registry
@@ -21,7 +21,7 @@ describe Bosh::AwsCloud::Cloud do
 
     instance.should_receive(:block_device_mappings).and_return({})
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
+    Bosh::QingCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
 
     old_settings = { 'foo' => 'bar'}
     new_settings = {
@@ -58,7 +58,7 @@ describe Bosh::AwsCloud::Cloud do
     volume.should_receive(:attach_to).
       with(instance, '/dev/sdh').and_return(attachment)
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
+    Bosh::QingCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
 
     old_settings = { 'foo' => 'bar'}
     new_settings = {
@@ -95,7 +95,7 @@ describe Bosh::AwsCloud::Cloud do
     volume.should_receive(:attach_to).
       with(instance, '/dev/sdh').and_return(attachment)
 
-    Bosh::AwsCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
+    Bosh::QingCloud::ResourceWait.stub(:for_attachment).with(attachment: attachment, state: :attached)
 
     old_settings = { 'foo' => 'bar'}
     new_settings = {
