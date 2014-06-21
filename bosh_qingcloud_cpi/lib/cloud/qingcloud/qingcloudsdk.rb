@@ -48,6 +48,13 @@ module Bosh::QingCloud
       return @conn.create_volumes(size, volume_name, count)
     end
 
+    # Attach one or more volumes to same instance
+    # @param volumes : an array including IDs of the volumes you want to attach.
+    # @param instance : the ID of instance the volumes will be attached to.
+    def attach_volumes(volumes, instance)
+      return @conn.attach_volumes(volumes, instance)
+    end
+
     def terminate_instances(instance_id)
       instances = []
       instances << instance_id 

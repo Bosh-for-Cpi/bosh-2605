@@ -161,8 +161,8 @@ module Bosh::QingCloud
         volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, count)
 
         logger.info("Creating volume '#{volume["volumes"]}'")
-        sleep(20)
-        # ResourceWait.for_volume(volume: volume, state: :available)
+        # sleep(20)
+        # ResourceWait.for_volume(volume: volume, status: :available)
         volume["volumes"][0]
       end
     end
@@ -219,17 +219,21 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to attach
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
-        instance = @ec2.instances[instance_id]
-        volume = @ec2.volumes[disk_id]
+        # instance = @ec2.instances[instance_id]
+        # volume = @ec2.volumes[disk_id]
 
-        device_name = attach_ebs_volume(instance, volume)
+        # device_name = attach_ebs_volume(instance, volume)
 
-        update_agent_settings(instance) do |settings|
-          settings["disks"] ||= {}
-          settings["disks"]["persistent"] ||= {}
-          settings["disks"]["persistent"][disk_id] = device_name
-        end
+        attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
+
+        # ResourceWait.for_volume(volume: volume, transition_status: :in-use)
+        # update_agent_settings(instance) do |settings|
+        #   settings["disks"] ||= {}
+        #   settings["disks"]["persistent"] ||= {}
+        #   settings["disks"]["persistent"][disk_id] = device_name
+        # end
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
+        # p attachment
       end
     end
 
