@@ -148,17 +148,17 @@ module Bosh::QingCloud
     end
 
     ##
-    # Creates a new EBS volume
+    # Creates a new  volume
     # @param [Integer] size disk size in MiB
     # @param [optional, String] volume name
     # @param [optional, Integer] volume count
-    # @return [String] created EBS volume id
-    def create_disk(size, volume_name = nil, count = 1)
-      with_thread_name("create_disk(#{size}, #{volume_name}, #{count})") do
+    # @return [String] created  volume id
+    def create_disk(size, volume_name = nil)
+      with_thread_name("create_disk(#{size}, #{volume_name})") do
         validate_disk_size(size)
 
         # if the disk is created for an instance, use the same availability zone as they must match
-        volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, count)
+        volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, 1)
 
         logger.info("Creating volume '#{volume["volumes"]}'")
         # sleep(20)
@@ -416,11 +416,12 @@ module Bosh::QingCloud
     end
 
     # Delete a stemcell and the accompanying snapshots
-    # @param [String] stemcell_id EC2 AMI name of the stemcell to be deleted
+    # @param [String] stemcell_id  name of the stemcell to be deleted
     def delete_stemcell(stemcell_id)
-      with_thread_name("delete_stemcell(#{stemcell_id})") do
-        stemcell = StemcellFinder.find_by_region_and_id(region, stemcell_id)
-        stemcell.delete
+      with_thread_name("delete_stemcell(#{stemcell_id})") do      
+        stemcell = @qingcloudsdk.describe_images(stemcell_id)
+        print stemcell
+        #stemcell.delete
       end
     end
 
