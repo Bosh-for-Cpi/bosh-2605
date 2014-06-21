@@ -44,7 +44,7 @@ module Bosh::QingCloud
                                       limit = 50)
     end
 
-    def CreateVolumes(size, volume_name, count)
+    def create_volumes(size, volume_name, count)
       return @conn.create_volumes(size, volume_name, count)
     end
 

@@ -158,7 +158,7 @@ module Bosh::QingCloud
         validate_disk_size(size)
 
         # if the disk is created for an instance, use the same availability zone as they must match
-        volume = @qingcloudsdk.CreateVolumes(size / 1024 , volume_name, count)
+        volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, count)
 
         logger.info("Creating volume '#{volume["volumes"]}'")
         sleep(20)
