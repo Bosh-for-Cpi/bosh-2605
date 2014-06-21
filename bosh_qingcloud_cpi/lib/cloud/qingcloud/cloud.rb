@@ -150,29 +150,29 @@ module Bosh::QingCloud
     ##
     # Creates a new EBS volume
     # @param [Integer] size disk size in MiB
-    # @param [optional, String] instance_id EC2 instance id
-    #        of the VM that this disk will be attached to
+    # @param [optional, String] volume name
+    # @param [optional, Integer] volume count
     # @return [String] created EBS volume id
-    def create_disk(size, instance_id = nil)
-      with_thread_name("create_disk(#{size}, #{instance_id})") do
+    def create_disk(size, volume_name = nil, count = 1)
+      with_thread_name("create_disk(#{size}, #{volume_name}, #{count})") do
         validate_disk_size(size)
 
         # if the disk is created for an instance, use the same availability zone as they must match
-        volume = @ec2.volumes.create(:size => (size / 1024.0).ceil,
-                                     :availability_zone => @az_selector.select_availability_zone(instance_id))
+        volume = @qingcloudsdk.CreateVolumes(size / 1024 , volume_name, count)
 
-        logger.info("Creating volume '#{volume.id}'")
-        ResourceWait.for_volume(volume: volume, state: :available)
-
-        volume.id
+        logger.info("Creating volume '#{volume["volumes"]}'")
+        sleep(20)
+        # ResourceWait.for_volume(volume: volume, state: :available)
+        volume["volumes"][0]
       end
     end
 
     def validate_disk_size(size)
       raise ArgumentError, "disk size needs to be an integer" unless size.kind_of?(Integer)
+      raise ArgumentError, "disk size needs to be Divisible by 10" unless (size % 10 == 0)
 
-      cloud_error("AWS CPI minimum disk size is 1 GiB") if size < 1024
-      cloud_error("AWS CPI maximum disk size is 1 TiB") if size > 1024 * 1000
+      cloud_error("QingCloud CPI minimum disk size is 10  GiB") if size < 1024 * 10
+      cloud_error("QingCloud CPI maximum disk size is 500 GiB") if size > 1024 * 500
     end
 
     ##
@@ -254,13 +254,9 @@ module Bosh::QingCloud
     end
 
     def get_disks(vm_id)
-      disks = []
-      @ec2.instances[vm_id].block_devices.each do |block_device|
-        if block_device[:ebs]
-          disks << block_device[:ebs][:volume_id]
-        end
+      with_thread_name("get_disks(#{vm_id})") do
+        ret = @qingcloudsdk.describe_volumes(vm_id)
       end
-      disks
     end
 
     # Take snapshot of disk
