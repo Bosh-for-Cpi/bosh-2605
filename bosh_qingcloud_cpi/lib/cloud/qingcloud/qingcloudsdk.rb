@@ -17,41 +17,56 @@ module Bosh::QingCloud
       instances = []
       instances << instance_id 
       return @conn.describe_instances(instances,
-        image_id = [],
-        instance_type = [],
-        status = [],
-        search_word = [],
-        verbose = 0,
-        offset = 0,
-        limit = 50)
-    end
-
-    def restart_instances(instances_id)
-      instances = []
-      instances << instances_id 
-      return @conn.restart_instances(instances)
-    end
-
-    def describe_volumes(vm_id)
-      volumes = []
-      volumes << vm_id
-      return @conn.describe_volumes(volumes,
-                                    instance_id = [],
-                                    status = [],
+                                      image_id = [],
+                                      instance_type = [],
+                                      status = [],
                                       search_word = [],
                                       verbose = 0,
                                       offset = 0,
-                                      limit = 50)
-    end
-
-    def create_volumes(size, volume_name, count)
-      return @conn.create_volumes(size, volume_name, count)
+                                      limit = 0)
     end
 
     def terminate_instances(instance_id)
       instances = []
       instances << instance_id 
       return @conn.terminate_instances(instances)
+    end
+
+    def restart_instances(instance_id)
+      instances = []
+      instances << instance_id
+      return @conn.restart_instances(instances)
+    end
+
+    def describe_volumes(volume_id)
+      volumes = []
+      volumes << vm_id
+      return @conn.describe_volumes(volumes,
+                                    instance_id = [],
+                                    status = [],
+                                    search_word = [],
+                                    verbose = 0,
+                                    offset = 0,
+                                    limit = 0)
+    end
+
+    def create_volumes(size, volume_name, count)
+      return @conn.create_volumes(size, volume_name, count)
+    end
+
+    def describe_images(stemcell_id)
+      images = []
+      images << stemcell_id
+      return @conn.describe_images(images,
+                                  os_family = [],
+                                  processor_type = [],
+                                  status = [],
+                                  visibility = [],
+                                  provider = [],
+                                  verbose = 0,
+                                  search_word = [],
+                                  offset = 0,
+                                  limit = 0)
     end
 
   end
