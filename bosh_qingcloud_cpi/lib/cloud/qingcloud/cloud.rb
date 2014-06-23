@@ -159,11 +159,11 @@ module Bosh::QingCloud
 
         # if the disk is created for an instance, use the same availability zone as they must match
         volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, 1)
+        volume_info = RubyPython::Conversion.ptorDict(volume.pObject.pointer)
 
         logger.info("Creating volume '#{volume["volumes"]}'")
-        # sleep(20)
-        # ResourceWait.for_volume(volume: volume, status: :available)
-        volume["volumes"][0]
+        wait_resource(volume_info["volumes"][0], "available", method(:get_disk_status))
+        volume_info["volumes"][0]
       end
     end
 
@@ -263,6 +263,14 @@ module Bosh::QingCloud
     def get_disks(vm_id)
       with_thread_name("get_disks(#{vm_id})") do
         ret = @qingcloudsdk.describe_volumes(vm_id)
+      end
+    end
+
+    def get_disk_status(volume_id)
+      with_thread_name("get_disk_status(#{volume_id})") do
+        ret = @qingcloudsdk.describe_volumes(volume_id)
+        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        return ret_info["volume_set"][0]["status"] 
       end
     end
 
@@ -481,6 +489,7 @@ module Bosh::QingCloud
           #max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
           logger:             qingcloud_logger
       }
+      @wait_resource_poll_interval = qingcloud_properties["wait_resource_poll_interval"] || 5
       @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
       #aws_params[:proxy_uri] = aws_properties['proxy_uri'] if aws_properties['proxy_uri']
 

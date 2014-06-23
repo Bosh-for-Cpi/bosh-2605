@@ -34,7 +34,7 @@ require "cloud/qingcloud/vip_network"
 require "cloud/qingcloud/instance_manager"
 require "cloud/qingcloud/tag_manager"
 require "cloud/qingcloud/availability_zone_selector"
-require "cloud/qingcloud/resource_wait"
+# require "cloud/qingcloud/resource_wait"
 
 module Bosh
   module Clouds

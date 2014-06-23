@@ -40,7 +40,7 @@ module Bosh::QingCloud
 
     def describe_volumes(volume_id)
       volumes = []
-      volumes << vm_id
+      volumes << volume_id
       return @conn.describe_volumes(volumes,
                                     instance_id = [],
                                     status = [],
