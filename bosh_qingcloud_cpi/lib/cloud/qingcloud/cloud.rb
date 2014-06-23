@@ -1,6 +1,6 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 require 'cloud/qingcloud/stemcell_finder'
-
+require 'rubypython'
 module Bosh::QingCloud
 
   class Cloud < Bosh::Cloud
@@ -176,42 +176,28 @@ module Bosh::QingCloud
     end
 
     ##
-    # Delete EBS volume
-    # @param [String] disk_id EBS volume id
+    # Delete qingcloud volume
+    # @param [String] disk_id qingcloud volume id
     # @raise [Bosh::Clouds::CloudError] if disk is not in available state
     def delete_disk(disk_id)
       with_thread_name("delete_disk(#{disk_id})") do
-        volume = @ec2.volumes[disk_id]
+        @logger.info("Deleting volume `#{disk_id}'...")
+        volume_info = @qingcloudsdk.describe_volumes(disk_id)
+        if volume_info["total_count"] == 1
 
-        logger.info("Deleting volume `#{volume.id}'")
-
-        tries = 10
-        sleep_cb = ResourceWait.sleep_callback("Waiting for volume `#{volume.id}' to be deleted", tries)
-        ensure_cb = Proc.new do |retries|
-          cloud_error("Timed out waiting to delete volume `#{volume.id}'") if retries == tries
-        end
-        error = AWS::EC2::Errors::Client::VolumeInUse
-
-        Bosh::Common.retryable(tries: tries, sleep: sleep_cb, on: error, ensure: ensure_cb) do
-          volume.delete
-          true # return true to only retry on Exceptions
-        end
-
-        if fast_path_delete?
-          begin
-            TagManager.tag(volume, "Name", "to be deleted")
-            logger.info("Volume `#{disk_id}' has been marked for deletion")
-          rescue AWS::EC2::Errors::InvalidVolume::NotFound
-            # Once in a blue moon AWS if actually fast enough that the volume is already gone
-            # when we get here, and if it is, our work here is done!
+          state = volume_info["volume_set"][0]["status"]
+          
+          if  state != "available"
+            cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
           end
-          return
+
+          ret = @qingcloudsdk.delete_volumes(disk_id)
+          wait_resource("volume", :deleted, :status, true)
+        else
+          @logger.info("Volume `#{disk_id}' not found. Skipping.")
         end
-
-        ResourceWait.for_volume(volume: volume, state: :deleted)
-
-        logger.info("Volume `#{disk_id}' has been deleted")
       end
+
     end
 
     # Attach an  volume to an instance
@@ -308,14 +294,30 @@ module Bosh::QingCloud
     # @param [String] snapshot_id snapshot id to delete
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+        snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        if snapshot_info["total_count"] == 1
+          status = snapshot_info["snapshot_set"][0]["status"]
+          p status
+        end
 
+        if status == "available"
+          ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+          p "delete successfully..."
+        else
+          p "cannot deleted..."
+        end
         #  if snapshot.status == :in_use
         #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
         #  end
 
         #  snapshot.delete
-        logger.info("snapshot '#{snapshot_id}' deleted")
+        #logger.info("snapshot '#{snapshot_id}' deleted")
+      end
+    end
+
+    def get_snapshot(snapshot_id)
+      with_thread_name("get_snapshot(#{snapshot_id})") do
+        ret = @qingcloudsdk.describe_snapshot(snapshot_id)
       end
     end
 

@@ -85,6 +85,14 @@ module Bosh::QingCloud
                                     image_name = "")
     end
 
+    def delete_volumes(disk_id)
+      volumes = []
+      volumes << disk_id
+      ret = @conn.delete_volumes(volumes)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
+    
     def delete_images(stemcell_id)
       images = []
       images << stemcell_id
@@ -102,6 +110,20 @@ module Bosh::QingCloud
       snapshots_id = []
       snapshots_id << snapshots
       return @conn.delete_snapshots(snapshots_id)
+    end
+
+    def describe_snapshot(snapshot_id)
+      snapshots = []
+      snapshots << snapshot_id
+      return @conn.describe_snapshots(snapshots,
+                                      resource_id = [],
+                                      snapshot_type = 1,
+                                      root_id = [],
+                                      status = [],
+                                      verbose = 0,
+                                      search_word = [],
+                                      offset = 0,
+                                      limit = 0)
     end
 
   end
