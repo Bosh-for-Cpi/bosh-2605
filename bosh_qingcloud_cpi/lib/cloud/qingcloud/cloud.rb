@@ -130,8 +130,8 @@ module Bosh::QingCloud
     end
 
     ##
-    # Reboot EC2 instance
-    # @param [String] instance_id EC2 instance id
+    # Reboot Qing instance
+    # @param [String] instance_id Qing instance id
     def reboot_vm(instance_id)
       with_thread_name("reboot_vm(#{instance_id})") do
         ret = @qingcloudsdk.restart_instances(instance_id)
@@ -269,7 +269,7 @@ module Bosh::QingCloud
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
     # @return [String] snapshot id
-    def snapshot_disk(disk_id, metadata)
+    def snapshot_disk(resources, snapshot_name)
       with_thread_name("snapshot_disk(#{resources})") do
 
         ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
