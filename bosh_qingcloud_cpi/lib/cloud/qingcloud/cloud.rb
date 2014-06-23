@@ -373,7 +373,7 @@ module Bosh::QingCloud
     end
 
     ##
-    # Creates a new EC2 AMI using stemcell image.
+    # Creates a new stemcell using stemcell image.
     # This method can only be run on an EC2 instance, as image creation
     # involves creating and mounting new EBS volume as local block device.
     # @param [String] image_path local filesystem path to a stemcell image
@@ -390,35 +390,7 @@ module Bosh::QingCloud
     # @return [String] EC2 AMI name of the stemcell
     def create_stemcell(image_path, stemcell_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
-        creator = StemcellCreator.new(region, stemcell_properties)
-
-        return creator.fake.id if creator.fake?
-
-        begin
-          # These three variables are used in 'ensure' clause
-          instance = nil
-          volume = nil
-
-          # 1. Create and mount new EBS volume (2GB default)
-          disk_size = stemcell_properties["disk"] || 2048
-          volume_id = create_disk(disk_size, current_vm_id)
-          volume = @ec2.volumes[volume_id]
-          instance = @ec2.instances[current_vm_id]
-
-          sd_name = attach_ebs_volume(instance, volume)
-          ebs_volume = find_ebs_device(sd_name)
-
-          logger.info("Creating stemcell with: '#{volume.id}' and '#{stemcell_properties.inspect}'")
-          creator.create(volume, ebs_volume, image_path).id
-        rescue => e
-          logger.error(e)
-          raise e
-        ensure
-          if instance && volume
-            detach_ebs_volume(instance, volume, true)
-            delete_disk(volume.id)
-          end
-        end
+        image_id = "img-j557eu33"
       end
     end
 

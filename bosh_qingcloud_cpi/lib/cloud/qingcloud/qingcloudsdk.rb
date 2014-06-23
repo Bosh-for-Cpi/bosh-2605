@@ -65,7 +65,6 @@ module Bosh::QingCloud
       return @conn.detach_volumes(volumes, instance)
     end
 
-
     def describe_images(stemcell_id)
       images = []
       images << stemcell_id
@@ -79,6 +78,11 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
+    end
+
+    def create_images(instance_id)
+      return @conn.capture_instance(instance_id,
+                                    image_name = "")
     end
 
     def delete_images(stemcell_id)
