@@ -29,7 +29,7 @@ module Bosh::QingCloud
       @logger = Bosh::Clouds::Config.logger
 
       initialize_qingcloud
-      #initialize_registry
+      initialize_registry
 
       @metadata_lock = Mutex.new
       print "initialize Finish!!\r\n"
@@ -205,21 +205,27 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to attach
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
-        # instance = @ec2.instances[instance_id]
-        # volume = @ec2.volumes[disk_id]
+        instance = has_vm?(instance_id)
+        
+        ret = get_disks(disk_id)
+        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        device_name=  ret_info["volume_set"][0]["volume_name"] 
+        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
 
-        # device_name = attach_ebs_volume(instance, volume)
+        if deivice_instance_id.nil? || deivice_instance_id.empty?
+          attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
 
-        attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
+          wait_resource(disk_id, "in-use", method(:get_disk_status))
 
-        # ResourceWait.for_volume(volume: volume, transition_status: :in-use)
-        # update_agent_settings(instance) do |settings|
-        #   settings["disks"] ||= {}
-        #   settings["disks"]["persistent"] ||= {}
-        #   settings["disks"]["persistent"][disk_id] = device_name
-        # end
+          update_agent_settings(instance_id) do |settings|
+            settings["disks"] ||= {}
+            settings["disks"]["persistent"] ||= {}
+            settings["disks"]["persistent"][disk_id] = device_name
+          end
+        end
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
-        # p attachment
+
+        device_name
       end
     end
 
@@ -233,7 +239,7 @@ module Bosh::QingCloud
 
         detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
 
-        #update_agent_settings(instance) do |settings|
+        #update_agent_settings(instance_id) do |settings|
         #  settings["disks"] ||= {}
         #  settings["disks"]["persistent"] ||= {}
         #  settings["disks"]["persistent"].delete(disk_id)
@@ -339,7 +345,7 @@ module Bosh::QingCloud
 
         network_configurator.configure(@ec2, instance)
 
-        update_agent_settings(instance) do |settings|
+        update_agent_settings(instance_id) do |settings|
           settings["networks"] = network_spec
         end
       end
@@ -520,14 +526,14 @@ module Bosh::QingCloud
                                              registry_password)
     end
 
-    def update_agent_settings(instance)
+    def update_agent_settings(instance_id)
       unless block_given?
         raise ArgumentError, "block is not provided"
       end
 
-      settings = registry.read_settings(instance.id)
+      settings = registry.read_settings(instance_id)
       yield settings
-      registry.update_settings(instance.id, settings)
+      registry.update_settings(instance_id, settings)
     end
 
     def attach_ebs_volume(instance, volume)
