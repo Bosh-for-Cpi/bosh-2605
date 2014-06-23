@@ -300,14 +300,30 @@ module Bosh::QingCloud
     # @param [String] snapshot_id snapshot id to delete
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+        snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        if snapshot_info["total_count"] == 1
+          status = snapshot_info["snapshot_set"][0]["status"]
+          p status
+        end
 
+        if status == "available"
+          ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+          p "delete successfully..."
+        else
+          p "cannot deleted..."
+        end
         #  if snapshot.status == :in_use
         #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
         #  end
 
         #  snapshot.delete
-        logger.info("snapshot '#{snapshot_id}' deleted")
+        #logger.info("snapshot '#{snapshot_id}' deleted")
+      end
+    end
+
+    def get_snapshot(snapshot_id)
+      with_thread_name("get_snapshot(#{snapshot_id})") do
+        ret = @qingcloudsdk.describe_snapshot(snapshot_id)
       end
     end
 
