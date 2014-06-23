@@ -270,25 +270,29 @@ module Bosh::QingCloud
     # @param [String] disk_id disk id of the disk to take the snapshot of
     # @return [String] snapshot id
     def snapshot_disk(disk_id, metadata)
-      with_thread_name("snapshot_disk(#{disk_id})") do
-        volume = @ec2.volumes[disk_id]
-        devices = []
-        volume.attachments.each {|attachment| devices << attachment.device}
+      with_thread_name("snapshot_disk(#{resources})") do
 
-        name = [:deployment, :job, :index].collect { |key| metadata[key] }
-        name << devices.first.split('/').last unless devices.empty?
+        ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
 
-        snapshot = volume.create_snapshot(name.join('/'))
-        logger.info("snapshot '#{snapshot.id}' of volume '#{disk_id}' created")
+        #volume = @ec2.volumes[disk_id]
+        #devices = []
+        #volume.attachments.each {|attachment| devices << attachment.device}
 
-        [:agent_id, :instance_id, :director_name, :director_uuid].each do |key|
-          TagManager.tag(snapshot, key, metadata[key])
-        end
-        TagManager.tag(snapshot, :device, devices.first) unless devices.empty?
-        TagManager.tag(snapshot, 'Name', name.join('/'))
+        #name = [:deployment, :job, :index].collect { |key| metadata[key] }
+        #name << devices.first.split('/').last unless devices.empty?
 
-        ResourceWait.for_snapshot(snapshot: snapshot, state: :completed)
-        snapshot.id
+        #snapshot = volume.create_snapshot(name.join('/'))
+        sleep(20)     #for resource_wait!!
+        logger.info("snapshot '#{snapshot_name}' of volume '#{resources}' created")
+
+        #[:agent_id, :instance_id, :director_name, :director_uuid].each do |key|
+        #  TagManager.tag(snapshot, key, metadata[key])
+        #end
+        #TagManager.tag(snapshot, :device, devices.first) unless devices.empty?
+        #TagManager.tag(snapshot, 'Name', name.join('/'))
+
+        #ResourceWait.for_snapshot(snapshot: snapshot, state: :completed)
+        #snapshot.id
       end
     end
 
@@ -296,13 +300,13 @@ module Bosh::QingCloud
     # @param [String] snapshot_id snapshot id to delete
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        snapshot = @ec2.snapshots[snapshot_id]
+        ret = @qingcloudsdk.delete_snapshots(snapshot_id)
 
-        if snapshot.status == :in_use
-          raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
-        end
+        #  if snapshot.status == :in_use
+        #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
+        #  end
 
-        snapshot.delete
+        #  snapshot.delete
         logger.info("snapshot '#{snapshot_id}' deleted")
       end
     end

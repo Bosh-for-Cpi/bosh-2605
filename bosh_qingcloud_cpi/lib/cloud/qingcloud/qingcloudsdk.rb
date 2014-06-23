@@ -26,6 +26,7 @@ module Bosh::QingCloud
                                       limit = 0)
     end
 
+
     def terminate_instances(instance_id)
       instances = []
       instances << instance_id 
@@ -79,6 +80,19 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
+    end
+
+    def create_snapshots(resources, snapshot_name)
+      resources_id = []
+      resources_id << resources
+
+      return @conn.create_snapshots(resources_id, snapshot_name, is_full=0)
+    end
+
+    def delete_snapshots(snapshots)
+      snapshots_id = []
+      snapshots_id << snapshots
+      return @conn.delete_snapshots(snapshots_id)
     end
 
   end
