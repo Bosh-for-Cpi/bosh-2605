@@ -214,7 +214,7 @@ module Bosh::QingCloud
       end
     end
 
-    # Attach an EBS volume to an EC2 instance
+    # Attach an  volume to an instance
     # @param [String] instance_id EC2 instance id of the virtual machine to attach the disk to
     # @param [String] disk_id EBS volume id of the disk to attach
     def attach_disk(instance_id, disk_id)
@@ -426,9 +426,13 @@ module Bosh::QingCloud
     # @param [String] stemcell_id  name of the stemcell to be deleted
     def delete_stemcell(stemcell_id)
       with_thread_name("delete_stemcell(#{stemcell_id})") do      
-        stemcell = @qingcloudsdk.describe_images(stemcell_id)
-        print stemcell
-        #stemcell.delete
+        image = @qingcloudsdk.describe_images(stemcell_id)
+        if image[:total_count] != 0
+          ret = @qingcloudsdk.delete_images(stemcell_id)
+          @logger.info("Stemcell `#{stemcell_id}' is now deleted")
+        else
+          @logger.info("Stemcell `#{stemcell_id}' not found. Skipping.")
+        end
       end
     end
 

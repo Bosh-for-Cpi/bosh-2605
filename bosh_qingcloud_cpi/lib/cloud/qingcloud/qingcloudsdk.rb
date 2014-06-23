@@ -5,12 +5,12 @@ module Bosh::QingCloud
   class QingCloudSDK
 
     def initialize(qingcloud_params)
-      @region = qingcloud_params[:region]
-      @access_key_id = qingcloud_params[:access_key_id]
-      @secret_access_key = qingcloud_params[:secret_access_key]
+      region = qingcloud_params[:region]
+      access_key_id = qingcloud_params[:access_key_id]
+      secret_access_key = qingcloud_params[:secret_access_key]
       RubyPython.start
       @qingcloudpick = RubyPython.import("qingcloud.iaas")
-      @conn = @qingcloudpick.connect_to_zone(@region, @access_key_id, @secret_access_key)
+      @conn = @qingcloudpick.connect_to_zone(region, access_key_id, secret_access_key)
     end
 
     def describe_instances(instance_id)
@@ -25,7 +25,6 @@ module Bosh::QingCloud
                                       offset = 0,
                                       limit = 0)
     end
-
 
     def terminate_instances(instance_id)
       instances = []
@@ -80,6 +79,12 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
+    end
+
+    def delete_images(stemcell_id)
+      images = []
+      images << stemcell_id
+      return @conn.delete_images(images)
     end
 
     def create_snapshots(resources, snapshot_name)
