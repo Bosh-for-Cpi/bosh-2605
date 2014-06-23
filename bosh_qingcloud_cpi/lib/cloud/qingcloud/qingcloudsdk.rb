@@ -127,6 +127,14 @@ module Bosh::QingCloud
                                       offset = 0,
                                       limit = 0)
     end
+    
+    def describe_security_groups(disk_id)
+      volumes = []
+      volumes << disk_id
+      ret = @conn.delete_volumes(volumes)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
 
   end
 end
