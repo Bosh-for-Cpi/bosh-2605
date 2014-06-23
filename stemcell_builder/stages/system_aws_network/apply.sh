@@ -6,7 +6,7 @@ base_dir=$(readlink -nf $(dirname $0)/../..)
 source $base_dir/lib/prelude_apply.bash
 
 # we have to make this script work on both debian and redhat based systems
-# as it is requried for initial network configuration on AWS and OpenStack
+# as it is requried for initial network configuration on AWS and OpenStack, QingCloud
 if [ -e "$chroot/etc/network/interfaces" ]
 then
 

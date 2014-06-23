@@ -33,6 +33,10 @@ module Bat
       @bosh_api.info['cpi'] == 'openstack'
     end
 
+    def qingcloud?
+      @bosh_api.info['cpi'] == 'qingcloud'
+    end
+
     def warden?
       @bosh_api.info['cpi'] == 'warden'
     end

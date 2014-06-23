@@ -146,6 +146,26 @@ describe Bosh::Cli::Release do
       r.has_blobstore_secret?.should be(true)
     end
 
+    it "should merge swift (QingCloud) secrets into options" do
+      r = Bosh::Cli::Release.new(spec_asset("config/swift-qingcloud"))
+      opts = {
+        :container_name => "test",
+        :swift_provider => "qingcloud",
+        :qingcloud => {
+          :qingcloud_region => "gd1",
+          :qingcloud_access_key_id => "foo-key",
+          :qingcloud_secret_access_key => "foo-secret"
+        }
+      }
+      Bosh::Blobstore::Client.should_receive(:safe_create).with("swift", opts)
+      r.blobstore
+    end
+
+    it "should detect blobstore secrets for swift (QingCloud) options" do
+      r = Bosh::Cli::Release.new(spec_asset("config/swift-qingcloud"))
+      r.has_blobstore_secret?.should be(true)
+    end
+
     it "should merge swift (Rackspace) secrets into options" do
       r = Bosh::Cli::Release.new(spec_asset("config/swift-rackspace"))
       opts = {

@@ -136,6 +136,12 @@ module Bosh
             raise 'OpenStack user name is missing' unless options[:openstack].has_key?(:openstack_username)
             raise 'OpenStack API key is missing' unless options[:openstack].has_key?(:openstack_api_key)
             raise 'OpenStack tenant is missing' unless options[:openstack].has_key?(:openstack_tenant)
+          when 'qingcloud'
+            raise 'QingCloud options are missing' unless options.has_key?(:qingcloud)
+            raise "Invalid QingCloud options, Hash expected, #{options[:qingcloud].class} given" unless options[:qingcloud].is_a?(Hash)
+            raise 'QingCloud availability zone is missing' unless options[:qingcloud].has_key?(:qingcloud_region)   
+            raise 'QingCloud access key id is missing' unless options[:qingcloud].has_key?(:qingcloud_access_key_id)
+            raise 'QingCloud secret access key is missing' unless options[:qingcloud].has_key?(:qingcloud_secret_access_key)         
           when 'rackspace'
             raise 'Rackspace options are missing' unless options.has_key?(:rackspace)
             raise "Invalid Rackspace options, Hash expected, #{options[:rackspace].class} given" unless options[:rackspace].is_a?(Hash)

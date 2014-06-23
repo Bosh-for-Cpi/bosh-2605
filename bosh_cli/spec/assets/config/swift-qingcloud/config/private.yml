@@ -1,0 +1,8 @@
+---
+blobstore:
+  swift:
+    openstack:
+      qingcloud_region: gd1
+      qingcloud_access_key_id: foo-key
+      qingcloud_secret_access_key: foo-secret
+	  

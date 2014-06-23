@@ -77,6 +77,32 @@ var _ = Describe("Provider", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(inf).To(Equal(expectedInf))
 		})
+		
+		It("returns qingcloud infrastructure", func() {
+			metadataService := NewConcreteMetadataService(
+				"http://169.254.169.254",
+				NewDigDNSResolver(logger),
+			)
+
+			registry := NewConcreteRegistry(metadataService, true)
+
+			expectedDevicePathResolver := boshdpresolv.NewMappedDevicePathResolver(
+				500*time.Millisecond,
+				platform.GetFs(),
+			)
+
+			expectedInf := NewQingcloudInfrastructure(
+				metadataService,
+				registry,
+				platform,
+				expectedDevicePathResolver,
+				logger,
+			)
+
+			inf, err := provider.Get("qingcloud")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(inf).To(Equal(expectedInf))
+		})		
 
 		It("returns vsphere infrastructure", func() {
 			expectedDevicePathResolver := boshdpresolv.NewVsphereDevicePathResolver(

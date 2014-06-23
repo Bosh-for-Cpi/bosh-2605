@@ -117,7 +117,7 @@ func (s concreteService) checkAtMostOneDynamicNetwork(settings Settings) error {
 
 	for _, network := range settings.Networks {
 		// Currently proper support for multiple dynamic networks is not possible
-		// because CPIs (e.g. AWS and OpenStack) do not include MAC address
+		// because CPIs (e.g. AWS, OpenStack and QingCloud) do not include MAC address
 		// for dynamic networks and that is the only way to reliably determine
 		// network to interface to IP mapping
 		if network.IsDynamic() {

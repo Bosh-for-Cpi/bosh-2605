@@ -140,4 +140,30 @@ describe Bosh::Agent::Platform::Linux::Disk do
       expect(disk_manager.lookup_disk_by_cid(2)).to eq '/dev/vdf'
     end
   end
+
+  context 'QingCloud' do
+    let(:settings) do
+      { 'disks' => { 'ephemeral' => '/dev/sdq',
+                     'persistent' => { 2 => '/dev/sdf' } } }
+    end
+    let(:infrastructure_name) { 'qingcloud' }
+
+    it 'gets data disk device name' do
+      Dir.should_receive(:glob).with(%w(/dev/sdq /dev/vdq /dev/xvdq)).twice.and_return(%w(/dev/vdq))
+      expect(disk_manager.get_data_disk_device_name).to eq '/dev/vdq'
+    end
+
+    context 'when not present at settings' do
+      let(:settings) { { 'disks' => {} } }
+      it 'does not get data disk device name' do
+        expect(disk_manager.get_data_disk_device_name).to be_nil
+      end
+    end
+
+    it 'looks up disk by cid' do
+      Dir.should_receive(:glob).with(%w(/dev/sdf /dev/vdf /dev/xvdf)).twice.and_return(%w(/dev/vdf))
+      expect(disk_manager.lookup_disk_by_cid(2)).to eq '/dev/vdf'
+    end
+  end
+
 end

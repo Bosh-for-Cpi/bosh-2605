@@ -216,4 +216,16 @@ describe Bosh::Agent::Platform::Linux::Network do
       network_wrapper.wrote_dhcp_conf.should be(true)
     end
   end
+
+  context "QingCloud" do
+    it "should delegate DHCP configuration to platform implementation" do
+      Bosh::Agent::Config.infrastructure_name = "qingcloud"
+      Bosh::Agent::Config.instance_variable_set :@infrastructure, nil
+      Bosh::Agent::Config.infrastructure.stub(:load_settings).and_return(partial_settings)
+      Bosh::Agent::Config.settings = partial_settings
+
+      network_wrapper.setup_networking
+      network_wrapper.wrote_dhcp_conf.should be(true)
+    end
+  end
 end

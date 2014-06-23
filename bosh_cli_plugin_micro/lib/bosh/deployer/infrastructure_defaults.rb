@@ -1,5 +1,6 @@
 require 'bosh/deployer/infrastructure_defaults/aws'
 require 'bosh/deployer/infrastructure_defaults/openstack'
+require 'bosh/deployer/infrastructure_defaults/qingcloud'
 require 'bosh/deployer/infrastructure_defaults/vcloud'
 require 'bosh/deployer/infrastructure_defaults/vsphere'
 
@@ -9,6 +10,8 @@ module Bosh::Deployer::InfrastructureDefaults
       when 'aws'
         defaults = AWS
       when 'openstack'
+        defaults = OPENSTACK
+      when 'qingcloud'
         defaults = OPENSTACK
       when 'vcloud'
         defaults = VCLOUD

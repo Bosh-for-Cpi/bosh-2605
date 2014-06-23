@@ -24,7 +24,8 @@ module Bosh::Dev
           expect(matrix[8]).to eq(['aws', 'centos', nil, 'go'])
           expect(matrix[9]).to eq(%w(openstack ubuntu lucid ruby))
           expect(matrix[10]).to eq(['openstack', 'centos', nil, 'ruby'])
-
+          expect(matrix[11]).to eq(%w(qingcloud ubuntu lucid ruby))
+          expect(matrix[12]).to eq(['qingcloud', 'centos', nil, 'ruby'])
           artifacts
         end
 
