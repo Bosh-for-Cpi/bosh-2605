@@ -242,18 +242,21 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to detach
     def detach_disk(instance_id, disk_id)
       with_thread_name("detach_disk(#{instance_id}, #{disk_id})") do
-        instance = @ec2.instances[instance_id]
-        volume = @ec2.volumes[disk_id]
+        #instance = @ec2.instances[instance_id]
+        #volume = @ec2.volumes[disk_id]
 
-        update_agent_settings(instance) do |settings|
-          settings["disks"] ||= {}
-          settings["disks"]["persistent"] ||= {}
-          settings["disks"]["persistent"].delete(disk_id)
-        end
+        detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
 
-        detach_ebs_volume(instance, volume)
+        #update_agent_settings(instance) do |settings|
+        #  settings["disks"] ||= {}
+        #  settings["disks"]["persistent"] ||= {}
+        #  settings["disks"]["persistent"].delete(disk_id)
+        #end
+
+        #detach_ebs_volume(instance, volume)
 
         logger.info("Detached `#{disk_id}' from `#{instance_id}'")
+        print detachment
       end
     end
 

@@ -61,6 +61,11 @@ module Bosh::QingCloud
       return @conn.attach_volumes(volumes, instance)
     end
 
+    def detach_volumes(volumes, instance)
+      return @conn.detach_volumes(volumes, instance)
+    end
+
+
     def describe_images(stemcell_id)
       images = []
       images << stemcell_id
