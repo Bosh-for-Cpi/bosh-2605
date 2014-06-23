@@ -80,33 +80,106 @@ module Bosh::QingCloud
     #   agent settings
     # @return [String] EC2 instance id of the new virtual machine
     def create_vm(agent_id, stemcell_id, resource_pool, network_spec, disk_locality = nil, environment = nil)
+           # do this early to fail fast
       with_thread_name("create_vm(#{agent_id}, ...)") do
-        # do this early to fail fast
-        stemcell = StemcellFinder.find_by_region_and_id(region, stemcell_id)
+        @logger.info('Creating new server...')
+        server_name = "vm-#{generate_unique_name}"
 
-        begin
-          instance_manager = InstanceManager.new(region, registry, az_selector)
-          instance = instance_manager.
-              create(agent_id, stemcell.image_id, resource_pool, network_spec, (disk_locality || []), environment, options)
+        network_configurator = NetworkConfigurator.new(network_spec)
 
-          logger.info("Creating new instance '#{instance.id}'")
-
-          NetworkConfigurator.new(network_spec).configure(region, instance)
-
-          registry_settings = initial_agent_settings(
-              agent_id,
-              network_spec,
-              environment,
-              stemcell.root_device_name,
-          )
-          registry.update_settings(instance.id, registry_settings)
-
-          instance.id
-        rescue => e # is this rescuing too much?
-          logger.error(%Q[Failed to create instance: #{e.message}\n#{e.backtrace.join("\n")}])
-          instance_manager.terminate(instance.id, fast_path_delete?) if instance
-          raise e
+        openstack_security_groups = with_openstack { @openstack.security_groups }.collect { |sg| sg.name }
+        security_groups = network_configurator.security_groups(@default_security_groups)
+        security_groups.each do |sg|
+          cloud_error("Security group `#{sg}' not found") unless openstack_security_groups.include?(sg)
         end
+        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")
+
+        nics = network_configurator.nics
+        @logger.debug("Using NICs: `#{nics.join(', ')}'")
+
+        image = with_openstack { @openstack.images.find { |i| i.id == stemcell_id } }
+        cloud_error("Image `#{stemcell_id}' not found") if image.nil?
+        @logger.debug("Using image: `#{stemcell_id}'")
+
+        flavor = with_openstack { @openstack.flavors.find { |f| f.name == resource_pool['instance_type'] } }
+        cloud_error("Flavor `#{resource_pool['instance_type']}' not found") if flavor.nil?
+        if flavor_has_ephemeral_disk?(flavor)
+          if flavor.ram
+            # Ephemeral disk size should be at least the double of the vm total memory size, as agent will need:
+            # - vm total memory size for swapon,
+            # - the rest for /vcar/vcap/data
+            min_ephemeral_size = (flavor.ram / 1024) * 2
+            if flavor.ephemeral < min_ephemeral_size
+              cloud_error("Flavor `#{resource_pool['instance_type']}' should have at least #{min_ephemeral_size}Gb " +
+                'of ephemeral disk')
+            end
+          end
+        end
+        @logger.debug("Using flavor: `#{resource_pool['instance_type']}'")
+
+        keyname = resource_pool['key_name'] || @default_key_name
+        keypair = with_openstack { @openstack.key_pairs.find { |k| k.name == keyname } }
+        cloud_error("Key-pair `#{keyname}' not found") if keypair.nil?
+        @logger.debug("Using key-pair: `#{keypair.name}' (#{keypair.fingerprint})")
+
+        if @boot_from_volume
+          boot_vol_size = flavor.disk * 1024
+
+          boot_vol_id = create_boot_disk(boot_vol_size, stemcell_id)
+          cloud_error("Failed to create boot volume.") if boot_vol_id.nil?
+          @logger.debug("Using boot volume: `#{boot_vol_id}'")
+        end
+
+        server_params = {
+          :name => server_name,
+          :image_ref => image.id,
+          :flavor_ref => flavor.id,
+          :key_name => keypair.name,
+          :security_groups => security_groups,
+          :nics => nics,
+          :user_data => Yajl::Encoder.encode(user_data(server_name, network_spec))
+        }
+
+        availability_zone = select_availability_zone(disk_locality, resource_pool['availability_zone'])
+        server_params[:availability_zone] = availability_zone if availability_zone
+
+        if @boot_from_volume
+          server_params[:block_device_mapping] = [{
+                                                   :volume_size => "",
+                                                   :volume_id => boot_vol_id,
+                                                   :delete_on_termination => "1",
+                                                   :device_name => "/dev/vda"
+                                                 }]
+        else
+          server_params[:personality] = [{
+                                          "path" => "#{BOSH_APP_DIR}/user_data.json",
+                                          "contents" => Yajl::Encoder.encode(user_data(server_name, network_spec, keypair.public_key))
+                                        }]
+        end
+
+        @logger.debug("Using boot parms: `#{server_params.inspect}'")
+        server = with_openstack { @openstack.servers.create(server_params) }
+
+        @logger.info("Creating new server `#{server.id}'...")
+        begin
+          wait_resource(server, :active, :state)
+        rescue Bosh::Clouds::CloudError => e
+          @logger.warn("Failed to create server: #{e.message}")
+
+          with_openstack { server.destroy }
+
+          raise Bosh::Clouds::VMCreationFailed.new(true)
+        end
+
+        @logger.info("Configuring network for server `#{server.id}'...")
+        network_configurator.configure(@openstack, server)
+
+        @logger.info("Updating settings for server `#{server.id}'...")
+        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
+                                          flavor_has_ephemeral_disk?(flavor))
+        @registry.update_settings(server.name, settings)
+
+        server.id.to_s
       end
     end
 
@@ -286,14 +359,30 @@ module Bosh::QingCloud
     # @param [String] snapshot_id snapshot id to delete
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+        snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        if snapshot_info["total_count"] == 1
+          status = snapshot_info["snapshot_set"][0]["status"]
+          p status
+        end
 
+        if status == "available"
+          ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+          p "delete successfully..."
+        else
+          p "cannot deleted..."
+        end
         #  if snapshot.status == :in_use
         #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
         #  end
 
         #  snapshot.delete
-        logger.info("snapshot '#{snapshot_id}' deleted")
+        #logger.info("snapshot '#{snapshot_id}' deleted")
+      end
+    end
+
+    def get_snapshot(snapshot_id)
+      with_thread_name("get_snapshot(#{snapshot_id})") do
+        ret = @qingcloudsdk.describe_snapshot(snapshot_id)
       end
     end
 
