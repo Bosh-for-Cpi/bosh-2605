@@ -38,18 +38,16 @@ module Bosh::QingCloud
       return @conn.restart_instances(instances)
     end
 
-    def describe_volumes(vm_id)
+    def describe_volumes(volume_id)
       volumes = []
-      volumes << vm_id
-      ret =  @conn.describe_volumes(volumes,
-          instance_id = [],
-          status = [],
-          search_word = [],
-          verbose = 0,
-          offset = 0,
-          limit = 50)
-      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
-      ret_info
+      volumes << volume_id
+      return @conn.describe_volumes(volumes,
+                                    instance_id = [],
+                                    status = [],
+                                    search_word = [],
+                                    verbose = 0,
+                                    offset = 0,
+                                    limit = 0)
     end
 
     def create_volumes(size, volume_name, count)
