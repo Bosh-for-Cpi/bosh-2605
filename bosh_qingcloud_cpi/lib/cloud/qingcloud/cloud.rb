@@ -29,7 +29,7 @@ module Bosh::QingCloud
       @logger = Bosh::Clouds::Config.logger
 
       initialize_qingcloud
-      initialize_registry
+      #initialize_registry
 
       @metadata_lock = Mutex.new
       print "initialize Finish!!\r\n"
@@ -104,7 +104,7 @@ module Bosh::QingCloud
           instance.id
         rescue => e # is this rescuing too much?
           logger.error(%Q[Failed to create instance: #{e.message}\n#{e.backtrace.join("\n")}])
-          instance_manager.terminate(instance.id, fast_path_delete?) if instance
+          #instance_manager.terminate(instance.id, fast_path_delete?) if instance
           raise e
         end
       end
@@ -287,25 +287,11 @@ module Bosh::QingCloud
 
         ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
 
-        #volume = @ec2.volumes[disk_id]
-        #devices = []
-        #volume.attachments.each {|attachment| devices << attachment.device}
-
-        #name = [:deployment, :job, :index].collect { |key| metadata[key] }
-        #name << devices.first.split('/').last unless devices.empty?
-
-        #snapshot = volume.create_snapshot(name.join('/'))
-        sleep(20)     #for resource_wait!!
+        #snapshot_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        
+        wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
+        ret["snapshots"][0]
         logger.info("snapshot '#{snapshot_name}' of volume '#{resources}' created")
-
-        #[:agent_id, :instance_id, :director_name, :director_uuid].each do |key|
-        #  TagManager.tag(snapshot, key, metadata[key])
-        #end
-        #TagManager.tag(snapshot, :device, devices.first) unless devices.empty?
-        #TagManager.tag(snapshot, 'Name', name.join('/'))
-
-        #ResourceWait.for_snapshot(snapshot: snapshot, state: :completed)
-        #snapshot.id
       end
     end
 
@@ -314,30 +300,29 @@ module Bosh::QingCloud
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
         snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        #p snapshot_info
         if snapshot_info["total_count"] == 1
           status = snapshot_info["snapshot_set"][0]["status"]
-          p status
-        end
+          #p status
 
-        if status == "available"
-          ret = @qingcloudsdk.delete_snapshots(snapshot_id)
-          p "delete successfully..."
-        else
-          p "cannot deleted..."
+          if status == "available"
+            ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+            snapshot_after_delete = @qingcloudsdk.describe_snapshot(snapshot_id)
+            #snapshot_info2 = RubyPython::Conversion.ptorDict(snapshot_after_delete.pObject.pointer)
+            #p snapshot_after_delete
+            wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
+          else
+          logger.info("snapshot `#{snapshot_id}' not found. Skipping.")
+          end
         end
-        #  if snapshot.status == :in_use
-        #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
-        #  end
-
-        #  snapshot.delete
-        #logger.info("snapshot '#{snapshot_id}' deleted")
       end
     end
 
-    def get_snapshot(snapshot_id)
+    def get_snapshot_status(snapshot_id)
       with_thread_name("get_snapshot(#{snapshot_id})") do
         ret = @qingcloudsdk.describe_snapshot(snapshot_id)
-        p ret
+        #p ret 
+        return ret["snapshot_set"][0]["status"]
       end
     end
 

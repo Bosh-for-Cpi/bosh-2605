@@ -105,8 +105,8 @@ module Bosh::QingCloud
     def create_snapshots(resources, snapshot_name)
       resources_id = []
       resources_id << resources
-
-      return @conn.create_snapshots(resources_id, snapshot_name, is_full=0)
+      ret = @conn.create_snapshots(resources_id, snapshot_name, is_full=1)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def delete_snapshots(snapshots)
