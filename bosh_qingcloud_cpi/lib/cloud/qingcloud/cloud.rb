@@ -179,7 +179,8 @@ module Bosh::QingCloud
     # @param [String] instance_id Qing instance id
     def has_vm?(instance_id)
       with_thread_name("has_vm?(#{instance_id})") do
-         ret = @qingcloudsdk.describe_instances(instance_id)
+        ret = @qingcloudsdk.describe_instances(instance_id)
+        ret["total_count"] != 0  &&  ![:terminated, :ceased].include?(ret["instance_set"][0]["status"])
       end
     end
 
