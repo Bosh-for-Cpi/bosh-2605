@@ -20,7 +20,7 @@ module Bosh::QingCloud
       @ip
     end
 
-    def configure(ec2, instance)
+    def configure(qingcloud, instance)
     end
   end
 end

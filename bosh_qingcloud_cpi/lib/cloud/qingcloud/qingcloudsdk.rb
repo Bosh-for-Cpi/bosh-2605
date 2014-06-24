@@ -38,16 +38,18 @@ module Bosh::QingCloud
       return @conn.restart_instances(instances)
     end
 
-    def describe_volumes(volume_id)
+    def describe_volumes(vm_id)
       volumes = []
-      volumes << volume_id
-      return @conn.describe_volumes(volumes,
-                                    instance_id = [],
-                                    status = [],
-                                    search_word = [],
-                                    verbose = 0,
-                                    offset = 0,
-                                    limit = 0)
+      volumes << vm_id
+      ret =  @conn.describe_volumes(volumes,
+          instance_id = [],
+          status = [],
+          search_word = [],
+          verbose = 0,
+          offset = 0,
+          limit = 50)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
     end
 
     def create_volumes(size, volume_name, count)
@@ -68,7 +70,7 @@ module Bosh::QingCloud
     def describe_images(stemcell_id)
       images = []
       images << stemcell_id
-      return @conn.describe_images(images,
+      ret = @conn.describe_images(images,
                                   os_family = [],
                                   processor_type = [],
                                   status = [],
@@ -78,6 +80,8 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info				  
     end
 
     def create_images(instance_id)
@@ -126,13 +130,72 @@ module Bosh::QingCloud
                                       limit = 0)
     end
     
-    def describe_security_groups(disk_id)
-      volumes = []
-      volumes << disk_id
-      ret = @conn.delete_volumes(volumes)
+    def describe_security_groups()
+      ret = @conn.describe_security_groups(security_groups = [],
+                                           security_group_name = "",
+                                           search_word = [],
+                                           verbose = 0,
+                                           offset = 0,
+                                           limit = 0)
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
 
+    def describe_key_pairs(keyname)
+      ret = @conn.describe_key_pairs(keypairs = [],
+                                 encrypt_method = [],
+                                 keyname,
+                                 verbose = 0,
+                                 offset = 0,
+                                 limit = 0)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
+    
+    def run_instances(image_id, instance_name, instance_type, vxnet, security_group, login_mode, login_keypair)
+      image = ""
+      image << image_id
+      name = ""
+      name << instance_name
+      type = ""
+      type << instance_type
+      vxnet_id = []
+      vxnet_id << vxnet
+      securityGroup = ""
+      securityGroup << security_group
+      loginMode = ""
+      loginMode << login_mode
+      loginKeypair = ""
+      loginKeypair << login_keypair
+      ret = @conn.run_instances(image,
+                            type,
+                            cpu = nil,
+                            memory = nil,
+                            count = 1,
+                            name,
+                            vxnet_id,
+                            securityGroup,
+                            loginMode,
+                            loginKeypair,
+                            login_passwd = "C1oudc0w",
+                            need_newsid = 0)  
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
+    
+    def associate_eip(eip, instance_id)
+      ret = @conn.associate_eip(eip,
+                            instance_id)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
+
+    def dissociate_eips(eip)
+      eips = []
+      eips << eip
+      ret = @conn.dissociate_eips(eips)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
   end
 end

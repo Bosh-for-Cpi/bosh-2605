@@ -14,7 +14,7 @@ module Bosh::QingCloud
       super
     end
 
-    def configure(ec2, instance)
+    def configure(qingcloud, instance)
     end
   end
 end

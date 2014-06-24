@@ -18,25 +18,22 @@ module Bosh::QingCloud
     #
     # @param [QingCloud:EC2] ec2 EC2 client
     # @param [QingCloud::EC2::Instance] instance EC2 instance to configure
-    def configure(ec2, instance)
-      if @ip.nil?
+    def configure(qingcloud, instance)      
+      if @ip == ""
         cloud_error("No IP provided for vip network `#{@name}'")
       end
 
-      elastic_ip = ec2.elastic_ips[@ip]
-      @logger.info("Associating instance `#{instance.id}' " \
-                   "with elastic IP `#{elastic_ip}'")
+      @logger.info("Associating instance `#{instance["instances"][0]}' " \
+                   "with elastic IP `#{@ip}'")
 
       # New elastic IP reservation supposed to clear the old one,
       # so no need to disassociate manually. Also, we don't check
       # if this IP is actually an allocated EC2 elastic IP, as
       # API call will fail in that case.
 
-      errors = [QingCloud::EC2::Errors::IncorrectInstanceState]
-      Bosh::Common.retryable(tries: 10, sleep: 1, on: errors) do
-        instance.associate_elastic_ip(elastic_ip)
-        true # need to return true to end the retries
-      end
+      ret = qingcloud.associate_eip(@ip, instance["instances"][0])
+      cloud_error("associate eip for vip network is fail. ret_info = `#{ret}'") if ret["ret_code"] != 0
+
     end
   end
 end

@@ -21,15 +21,13 @@ module Bosh::QingCloud
 
       @name = name
       @ip = spec["ip"]
+      print "Network ip =#{@ip}\r\n"
       @cloud_properties = spec["cloud_properties"]
     end
 
     ##
     # Configures given instance
-    #
-    # @param [QingCloud:EC2] instance EC2 client
-    # @param [QingCloud::EC2::Instance] EC2 instance to configure
-    def configure(ec2, instance)
+    def configure(qingcloud, instance)
       cloud_error("`configure' not implemented by #{self.class}")
     end
 

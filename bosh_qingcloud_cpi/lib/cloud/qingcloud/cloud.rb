@@ -79,107 +79,64 @@ module Bosh::QingCloud
     # @param [optional, Hash] environment data to be merged into
     #   agent settings
     # @return [String] EC2 instance id of the new virtual machine
-    def create_vm(agent_id, stemcell_id, resource_pool, network_spec, disk_locality = nil, environment = nil)
+
+    def create_vm(agent_id, stemcell_id,
+        resource_pool, network_spec, disk_locality = nil, environment = nil)
       with_thread_name("create_vm(#{agent_id}, ...)") do
+
         @logger.info('Creating new server...')
-        server_name = "vm-#{generate_unique_name}"
+        server_name = "vm-#{stemcell_id}"
         network_configurator = NetworkConfigurator.new(network_spec)
 
-
-        openstack_security_groups = with_openstack { @openstack.security_groups }.collect { |sg| sg.name }
+        #get security groups
+        openstack_security_groups = @qingcloudsdk.describe_security_groups()
         security_groups = network_configurator.security_groups(@default_security_groups)
-        security_groups.each do |sg|
-          cloud_error("Security group `#{sg}' not found") unless openstack_security_groups.include?(sg)
-        end
-        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")
+        print "security_groups = #{security_groups}\r\n"
+        #check security_group
 
+        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")
+        
         nics = network_configurator.nics
         @logger.debug("Using NICs: `#{nics.join(', ')}'")
+        
+        #check image 
+        image = @qingcloudsdk.describe_images(stemcell_id)
 
-        image = with_openstack { @openstack.images.find { |i| i.id == stemcell_id } }
-        cloud_error("Image `#{stemcell_id}' not found") if image.nil?
+        cloud_error("Image `#{stemcell_id}' not found") if image["total_count"] == 0
         @logger.debug("Using image: `#{stemcell_id}'")
 
-        flavor = with_openstack { @openstack.flavors.find { |f| f.name == resource_pool['instance_type'] } }
-        cloud_error("Flavor `#{resource_pool['instance_type']}' not found") if flavor.nil?
-        if flavor_has_ephemeral_disk?(flavor)
-          if flavor.ram
-            # Ephemeral disk size should be at least the double of the vm total memory size, as agent will need:
-            # - vm total memory size for swapon,
-            # - the rest for /vcar/vcap/data
-            min_ephemeral_size = (flavor.ram / 1024) * 2
-            if flavor.ephemeral < min_ephemeral_size
-              cloud_error("Flavor `#{resource_pool['instance_type']}' should have at least #{min_ephemeral_size}Gb " +
-                              'of ephemeral disk')
-            end
-          end
-        end
+        #check instance type
+
         @logger.debug("Using flavor: `#{resource_pool['instance_type']}'")
-
+        
+        #check keypair
         keyname = resource_pool['key_name'] || @default_key_name
-        keypair = with_openstack { @openstack.key_pairs.find { |k| k.name == keyname } }
-        cloud_error("Key-pair `#{keyname}' not found") if keypair.nil?
-        @logger.debug("Using key-pair: `#{keypair.name}' (#{keypair.fingerprint})")
+        keypair = @qingcloudsdk.describe_key_pairs(keyname)
 
-        if @boot_from_volume
-          boot_vol_size = flavor.disk * 1024
+        cloud_error("Key-pair `#{keyname}' not found") if keypair["total_count"] != 1
+        @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
 
-          boot_vol_id = create_boot_disk(boot_vol_size, stemcell_id)
-          cloud_error("Failed to create boot volume.") if boot_vol_id.nil?
-          @logger.debug("Using boot volume: `#{boot_vol_id}'")
-        end
+        instance_info = @qingcloudsdk.run_instances(stemcell_id, server_name, 
+          resource_pool['instance_type'], "vxnet-0", security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
+	
+        cloud_error("run_instances is failed, #{instance_info["message"]}") if instance_info["ret_code"] != 0
+        @logger.info("Creating new server `#{server_name}'...")
 
-        server_params = {
-            :name => server_name,
-            :image_ref => image.id,
-            :flavor_ref => flavor.id,
-            :key_name => keypair.name,
-            :security_groups => security_groups,
-            :nics => nics,
-            :user_data => Yajl::Encoder.encode(user_data(server_name, network_spec))
-        }
-
-        availability_zone = select_availability_zone(disk_locality, resource_pool['availability_zone'])
-        server_params[:availability_zone] = availability_zone if availability_zone
-
-        if @boot_from_volume
-          server_params[:block_device_mapping] = [{
-                                                      :volume_size => "",
-                                                      :volume_id => boot_vol_id,
-                                                      :delete_on_termination => "1",
-                                                      :device_name => "/dev/vda"
-                                                  }]
-        else
-          server_params[:personality] = [{
-                                             "path" => "#{BOSH_APP_DIR}/user_data.json",
-                                             "contents" => Yajl::Encoder.encode(user_data(server_name, network_spec, keypair.public_key))
-                                         }]
-        end
-
-        @logger.debug("Using boot parms: `#{server_params.inspect}'")
-        server = with_openstack { @openstack.servers.create(server_params) }
-
-        @logger.info("Creating new server `#{server.id}'...")
         begin
-          wait_resource(server, :active, :state)
+          wait_resource(instance_info["instances"][0], "running", method(:get_vm_status))
         rescue Bosh::Clouds::CloudError => e
           @logger.warn("Failed to create server: #{e.message}")
-
-          with_openstack { server.destroy }
-
+          @qingcloudsdk.(instance_info["instances"][0])
           raise Bosh::Clouds::VMCreationFailed.new(true)
         end
 
-        @logger.info("Configuring network for server `#{server.id}'...")
-        network_configurator.configure(@openstack, server)
+        #associate floationg ip
+        @logger.info("Configuring network for server `#{instance_info["instances"][0]}'...")
+        ret = network_configurator.configure(@qingcloudsdk, instance_info)
 
-        @logger.info("Updating settings for server `#{server.id}'...")
-        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
-                                          flavor_has_ephemeral_disk?(flavor))
-        @registry.update_settings(server.name, settings)
 
-        server.id.to_s
       end
+        
     end
 
     def default_ec2_endpoint
@@ -332,6 +289,14 @@ module Bosh::QingCloud
       end
     end
 
+    def get_vm_status(instance_id)
+      with_thread_name("get_vm_status(#{instance_id})") do
+        ret = @qingcloudsdk.describe_instances(instance_id)
+
+        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        return ret_info["instance_set"][0]["status"]
+      end
+    end
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
     # @return [String] snapshot id
