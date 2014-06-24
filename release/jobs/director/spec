@@ -256,6 +256,12 @@ properties:
     description: OpenStack tenant name
   compiled_package_cache.options.openstack_region:
     description: OpenStack region (optional)
+  compiled_package_cache.options.qingcloud_region:
+    description: QingCloud region
+  compiled_package_cache.options.qingcloud_access_key_id:
+    description: QingCloud access key id
+  compiled_package_cache.options.qingcloud_secret_access_key:
+    description: QingCloud secret access key   
   compiled_package_cache.options.rackspace_username:
     description: Rackspace Cloud Files Username
   compiled_package_cache.options.rackspace_api_key:
@@ -349,6 +355,33 @@ properties:
   openstack.wait_resource_poll_interval:
     description: Changes the delay (in seconds) between each status check to OpenStack when creating a resource
     default: 5
+  qingcloud.region:
+    description: QingCloud region 
+  qingcloud.access_key_id:
+    description: QingCloud access key id
+  qingcloud.secret_access_key:
+    description: QingCloud secret access key    
+  qingcloud.endpoint_type:
+    description: QingCloud endpoint type (optional, by default publicURL)
+    default: publicURL
+  qingcloud.state_timeout:
+    description: Timeout (in seconds) for QingCloud resources desired state (optional, by default 300)
+    default: 300
+  qingcloud.boot_from_volume:
+    description: Boot from volume
+    default: false
+  qingcloud.stemcell_public_visibility:
+    description: Set public visibility for stemcells (optional, false by default)
+    default: false
+  qingcloud.connection_options:
+    description: Hash containing optional connection parameters to the QingCloud API
+  qingcloud.default_key_name:
+    description: Default QingCloud keypair to use when spinning up new vms
+  qingcloud.default_security_groups:
+    description: Default QingCloud security groups to use when spinning up new vms
+  qingcloud.wait_resource_poll_interval:
+    description: Changes the delay (in seconds) between each status check to QingCloud when creating a resource
+    default: 5  
   vcenter.address:
     description: Address of vCenter server used by vsphere cpi
   vcenter.user:

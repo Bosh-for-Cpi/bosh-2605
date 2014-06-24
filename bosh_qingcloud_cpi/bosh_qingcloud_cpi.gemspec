@@ -15,7 +15,8 @@ Gem::Specification.new do |s|
   s.email        = 'support@cloudfoundry.com'
   s.required_ruby_version = Gem::Requirement.new('>= 1.9.3')
 
-  s.files        = `git ls-files -- bin/* lib/* scripts/*`.split("\n") + %w(README.md)
+  #s.files        = `git ls-files -- bin/* lib/* scripts/*`.split("\n") + %w(README.md)
+  s.files        = Dir.glob("bin/**/*") + Dir.glob("lib/**/*") + Dir.glob("scripts/**/*") + %w(README.md)
   s.require_path = 'lib'
   s.bindir       = 'bin'
   s.executables  = %w(bosh_qingcloud_console)

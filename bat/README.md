@@ -111,6 +111,48 @@ properties:
     - default
 ```
 
+On QingCloud with DHCP:
+```yaml
+---
+cpi: qingcloud
+properties:
+  static_ip: 54.235.115.62 # floating IP to use for the bat-release jobs
+  uuid: 25569986-a7ed-4529-ba84-8a03e2c6c78f # BAT_DIRECTOR UUID
+  pool_size: 1
+  stemcell:
+    name: bosh-qingcloud-kvm-ubuntu
+    version: latest
+  instances: 1
+  key_name: bosh # QingCloud key name
+  mbus: nats://nats:0b450ada9f830085e2cdeff6@10.42.49.80:4222 # Not used now, but don't remove
+```
+
+On QingCloud with manual networking (requires Quantum):
+```yaml
+---
+cpi: qingcloud
+properties:
+  static_ip: 54.235.115.62 # floating IP to use for the bat-release jobs
+  uuid: 25569986-a7ed-4529-ba84-8a03e2c6c78f # BAT_DIRECTOR UUID
+  pool_size: 1
+  stemcell:
+    name: bosh-qingcloud-kvm-ubuntu
+    version: latest
+  instances: 1
+  key_name: bosh # QingCloud key name
+  mbus: nats://nats:0b450ada9f830085e2cdeff6@10.42.49.80:4222
+  network:
+    cidr: 10.0.1.0/24
+    reserved:
+    - 10.0.1.2 - 10.0.1.9
+    static:
+    - 10.0.1.10 - 10.0.1.30
+    gateway: 10.0.1.1
+    net_id: 4ef0b0ec-58c9-4478-8382-2099da773fdd #
+    security_groups:
+    - default
+```
+
 ## EC2 Networking Config
 
 ### On EC2 with AWS-provided DHCP networking

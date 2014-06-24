@@ -29,7 +29,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'bosh_common',      "~>#{version}"
   s.add_dependency 'blobstore_client', "~>#{version}"
 
-  s.files         = `git ls-files -- lib/*`.split("\n") + %w(CHANGELOG)
+  #s.files         = `git ls-files -- lib/*`.split("\n") + %w(CHANGELOG)
+  s.files         = Dir.glob("lib/**/*") + %w(CHANGELOG)
   s.require_paths = %w(lib)
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
   s.bindir        = 'bin'

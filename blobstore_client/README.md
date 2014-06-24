@@ -115,6 +115,17 @@ These are the options for the Blobstore client when `swift_provider` is `opensta
 * `openstack_region` (optional)
   OpenStack region
 
+#### QingCloud Object Storage
+
+These are the options for the Blobstore client when `swift_provider` is `qingcloud`:
+
+* `qingcloud_region` (optional)
+  QingCloud region
+* `qingcloud_access_key_id` (required)
+  QingCloud Object Access Key
+* `qingcloud_secret_key` (required)
+  QingCloud Object Secret Key
+
 #### Rackspace Cloud Files
 
 These are the options for the Blobstore client when `swift_provider` is `rackspace`:

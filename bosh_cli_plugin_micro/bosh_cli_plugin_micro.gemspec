@@ -15,7 +15,8 @@ Gem::Specification.new do |s|
   s.email       = 'support@cloudfoundry.com'
   s.required_ruby_version = Gem::Requirement.new('>= 1.9.3')
 
-  s.files         = `git ls-files -- lib/* config/*`.split("\n") + %w(README.rdoc)
+  #s.files         = `git ls-files -- lib/* config/*`.split("\n") + %w(README.rdoc)
+  s.files         = Dir.glob("lib/**/*") + Dir.glob("config/**/*") + %w(README.rdoc)
   s.require_paths = ['lib', 'config']
 
   s.add_dependency 'sqlite3', '~>1.3.7'

@@ -12,7 +12,7 @@ module Bosh::Deployer::InfrastructureDefaults
       when 'openstack'
         defaults = OPENSTACK
       when 'qingcloud'
-        defaults = OPENSTACK
+        defaults = QINGCLOUD
       when 'vcloud'
         defaults = VCLOUD
       when 'vsphere'

@@ -49,7 +49,7 @@ module Bosh::QingCloud
             @security_groups += extract_security_groups(network_spec)
 
           else
-            cloud_error("Invalid network type `#{network_type}': OpenStack " \
+            cloud_error("Invalid network type `#{network_type}': QingCloud " \
                         "CPI can only handle `dynamic', 'manual' or `vip' " \
                         "network types")
         end

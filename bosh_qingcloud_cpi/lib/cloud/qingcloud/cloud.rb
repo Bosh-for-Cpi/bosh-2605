@@ -97,7 +97,7 @@ module Bosh::QingCloud
         network_configurator = NetworkConfigurator.new(network_spec)
 
         #get security groups
-        openstack_security_groups = @qingcloudsdk.describe_security_groups()
+        qingcloud_security_groups = @qingcloudsdk.describe_security_groups()
         security_groups = network_configurator.security_groups(@default_security_groups)
         print "security_groups = #{security_groups}\r\n"
         #check security_group
