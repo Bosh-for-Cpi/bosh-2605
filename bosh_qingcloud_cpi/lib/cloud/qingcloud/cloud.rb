@@ -322,6 +322,7 @@ module Bosh::QingCloud
         return ret["instance_set"][0]["status"]
       end
     end
+
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
     # @return [String] snapshot id
@@ -329,8 +330,6 @@ module Bosh::QingCloud
       with_thread_name("snapshot_disk(#{resources})") do
 
         ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
-
-        #snapshot_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
         
         wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
         
@@ -344,17 +343,17 @@ module Bosh::QingCloud
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
         snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
-        #p snapshot_info
+        
         if snapshot_info["total_count"] == 1
           status = snapshot_info["snapshot_set"][0]["status"]
-          #p status
+          
 
           if status == "available"
             ret = @qingcloudsdk.delete_snapshots(snapshot_id)
             snapshot_after_delete = @qingcloudsdk.describe_snapshot(snapshot_id)
-            #snapshot_info2 = RubyPython::Conversion.ptorDict(snapshot_after_delete.pObject.pointer)
-            #p snapshot_after_delete
+  
             wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
+
           else
           logger.info("snapshot `#{snapshot_id}' not found. Skipping.")
           end 
@@ -365,7 +364,6 @@ module Bosh::QingCloud
     def get_snapshot_status(snapshot_id)
       with_thread_name("get_snapshot(#{snapshot_id})") do
         ret = @qingcloudsdk.describe_snapshot(snapshot_id)
-        #p ret 
         return ret["snapshot_set"][0]["status"]
       end
     end
