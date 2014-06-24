@@ -186,13 +186,12 @@ module Bosh::QingCloud
         if volume_info["total_count"] == 1
 
           state = volume_info["volume_set"][0]["status"]
-          
           if  state != "available"
             cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
           end
 
           ret = @qingcloudsdk.delete_volumes(disk_id)
-          wait_resource("volume", :deleted, :status, true)
+          wait_resource(disk_id, "deleted", method(:get_disk_status))
         else
           @logger.info("Volume `#{disk_id}' not found. Skipping.")
         end
@@ -206,16 +205,21 @@ module Bosh::QingCloud
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
         instance = has_vm?(instance_id)
+        unless instance["total_count"] == 1
+          raise "does not exist the instance"
+        end  
         
-        ret = get_disks(disk_id)
-        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        ret_info = get_disks(disk_id)
+        unless ret_info["total_count"] == 1
+          raise "does not exist the disk"
+        end 
         device_name=  ret_info["volume_set"][0]["volume_name"] 
         deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
 
         if deivice_instance_id.nil? || deivice_instance_id.empty?
           attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
 
-          wait_resource(disk_id, "in-use", method(:get_disk_status))
+          # wait_resource(disk_id, "in-use", method(:get_disk_status))
 
           update_agent_settings(instance_id) do |settings|
             settings["disks"] ||= {}
@@ -234,8 +238,18 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to detach
     def detach_disk(instance_id, disk_id)
       with_thread_name("detach_disk(#{instance_id}, #{disk_id})") do
-        #instance = @ec2.instances[instance_id]
-        #volume = @ec2.volumes[disk_id]
+        instance = has_vm?(instance_id)
+        unless instance["total_count"] == 1
+          raise "does not exist the instance"
+        end 
+        ret_info = get_disks(disk_id)
+        unless ret_info["total_count"] == 1
+          raise "does not exist the disk"
+        end 
+        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
+        if deivice_instance_id.nil? || deivice_instance_id.empty?
+          raise "instance does not exist the disk"
+        end
 
         detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
 
@@ -260,8 +274,7 @@ module Bosh::QingCloud
 
     def get_disk_status(volume_id)
       with_thread_name("get_disk_status(#{volume_id})") do
-        ret = @qingcloudsdk.describe_volumes(volume_id)
-        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        ret_info = @qingcloudsdk.describe_volumes(volume_id)
         return ret_info["volume_set"][0]["status"] 
       end
     end
@@ -324,6 +337,7 @@ module Bosh::QingCloud
     def get_snapshot(snapshot_id)
       with_thread_name("get_snapshot(#{snapshot_id})") do
         ret = @qingcloudsdk.describe_snapshot(snapshot_id)
+        p ret
       end
     end
 

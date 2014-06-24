@@ -16,7 +16,7 @@ module Bosh::QingCloud
     def describe_instances(instance_id)
       instances = []
       instances << instance_id 
-      return @conn.describe_instances(instances,
+      ret = @conn.describe_instances(instances,
                                       image_id = [],
                                       instance_type = [],
                                       status = [],
@@ -24,6 +24,7 @@ module Bosh::QingCloud
                                       verbose = 0,
                                       offset = 0,
                                       limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def terminate_instances(instance_id)
@@ -41,13 +42,14 @@ module Bosh::QingCloud
     def describe_volumes(volume_id)
       volumes = []
       volumes << volume_id
-      return @conn.describe_volumes(volumes,
+      ret = @conn.describe_volumes(volumes,
                                     instance_id = [],
                                     status = [],
                                     search_word = [],
                                     verbose = 0,
                                     offset = 0,
                                     limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def create_volumes(size, volume_name, count)
@@ -68,7 +70,7 @@ module Bosh::QingCloud
     def describe_images(stemcell_id)
       images = []
       images << stemcell_id
-      return @conn.describe_images(images,
+      ret = @conn.describe_images(images,
                                   os_family = [],
                                   processor_type = [],
                                   status = [],
@@ -78,6 +80,7 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def create_images(instance_id)
@@ -115,7 +118,7 @@ module Bosh::QingCloud
     def describe_snapshot(snapshot_id)
       snapshots = []
       snapshots << snapshot_id
-      return @conn.describe_snapshots(snapshots,
+      ret = @conn.describe_snapshots(snapshots,
                                       resource_id = [],
                                       snapshot_type = 1,
                                       root_id = [],
@@ -124,6 +127,7 @@ module Bosh::QingCloud
                                       search_word = [],
                                       offset = 0,
                                       limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
   end
