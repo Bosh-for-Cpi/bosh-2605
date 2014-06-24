@@ -155,7 +155,7 @@ module Bosh::QingCloud
     end
 
     ##
-    # Delete EC2 instance ("terminate" in AWS language) and wait until
+    # Delete Qing instance ("terminate" in Qing language) and wait until
     # it reports as terminated
     # @param [String] instance_id EC2 instance id
     def delete_vm(instance_id)
@@ -175,8 +175,8 @@ module Bosh::QingCloud
     end
 
     ##
-    # Has EC2 instance
-    # @param [String] instance_id EC2 instance id
+    # Has Qing instance
+    # @param [String] instance_id Qing instance id
     def has_vm?(instance_id)
       with_thread_name("has_vm?(#{instance_id})") do
          ret = @qingcloudsdk.describe_instances(instance_id)
@@ -332,8 +332,9 @@ module Bosh::QingCloud
         #snapshot_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
         
         wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
-        ret["snapshots"][0]
+        
         logger.info("snapshot '#{snapshot_name}' of volume '#{resources}' created")
+        ret["snapshots"][0]
       end
     end
 
@@ -355,7 +356,7 @@ module Bosh::QingCloud
             wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
           else
           logger.info("snapshot `#{snapshot_id}' not found. Skipping.")
-          end
+          end 
         end
       end
     end
