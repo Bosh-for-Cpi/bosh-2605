@@ -23,6 +23,7 @@ func NewProvider(logger boshlog.Logger, platform boshplatform.Platform) (p Provi
 	// because we do not support arbitrary infrastructure configurations
 	awsRegistry := NewConcreteRegistry(metadataService, false)
 	openstackRegistry := NewConcreteRegistry(metadataService, true)
+	qingcloudRegistry := NewConcreteRegistry(metadataService, true)
 
 	fs := platform.GetFs()
 	dirProvider := platform.GetDirProvider()
@@ -46,10 +47,19 @@ func NewProvider(logger boshlog.Logger, platform boshplatform.Platform) (p Provi
 		mappedDevicePathResolver,
 		logger,
 	)
+	
+	qingcloudInfrastructure := NewQingcloudInfrastructure(
+		metadataService,
+		qingcloudRegistry,
+		platform,
+		mappedDevicePathResolver,
+		logger,
+	)
 
 	p.infrastructures = map[string]Infrastructure{
 		"aws":       awsInfrastructure,
 		"openstack": openstackInfrastructure,
+		"qingcloud": qingcloudInfrastructure,
 		"dummy":     NewDummyInfrastructure(fs, dirProvider, platform, dummyDevicePathResolver),
 		"warden":    NewWardenInfrastructure(dirProvider, platform, dummyDevicePathResolver),
 		"vsphere":   NewVsphereInfrastructure(platform, vsphereDevicePathResolver, logger),

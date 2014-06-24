@@ -98,6 +98,38 @@ module Bosh::Stemcell
       ]
     }
 
+    let(:qingcloud_ubuntu_infrastructure_stages) {
+      [
+        :system_qingcloud_network,
+        :system_qingcloud_clock,
+        :system_qingcloud_modules,
+        :system_parameters,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_qingcloud_qcow2,
+        :image_qingcloud_prepare_stemcell,
+        :stemcell_qingcloud
+      ]
+    }
+
+    let(:qingcloud_centos_infrastructure_stages) {
+      [
+        :system_qingcloud_network_centos,
+        :system_parameters,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_qingcloud_qcow2,
+        :image_qingcloud_prepare_stemcell,
+        :stemcell_qingcloud
+      ]
+    }
+
     let(:vsphere_ubuntu_infrastructure_stages) {
       [
         :system_open_vm_tools,
@@ -256,6 +288,26 @@ module Bosh::Stemcell
           end
         end
       end
+
+      context 'when using QingCloud' do
+        let(:infrastructure) { Infrastructure.for('qingcloud') }
+
+        context 'when the operating system is CentOS' do
+          let(:operating_system) { OperatingSystem.for('centos') }
+
+          it 'has the correct stages' do
+            expect(stage_collection.infrastructure_stages).to eq(qingcloud_centos_infrastructure_stages)
+          end
+        end
+
+        context 'when the operating system is Ubuntu' do
+          let(:operating_system) { OperatingSystem.for('ubuntu') }
+
+          it 'has the correct stages' do
+            expect(stage_collection.infrastructure_stages).to eq(qingcloud_ubuntu_infrastructure_stages)
+          end
+        e
+      end      
 
       context 'when using vSphere' do
         let(:infrastructure) { Infrastructure.for('vsphere') }

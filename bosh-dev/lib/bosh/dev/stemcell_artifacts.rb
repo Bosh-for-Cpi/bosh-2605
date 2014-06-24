@@ -19,6 +19,9 @@ module Bosh::Dev
         # Go agent is not ready yet for openstack
         Bosh::Stemcell::Definition.for('openstack', 'ubuntu', 'lucid', 'ruby'),
         Bosh::Stemcell::Definition.for('openstack', 'centos', nil, 'ruby'),
+
+        Bosh::Stemcell::Definition.for('qingcloud', 'ubuntu', 'lucid', 'ruby'),
+        Bosh::Stemcell::Definition.for('qingcloud', 'centos', nil, 'ruby'),
       ]
 
       new(version, definitions)

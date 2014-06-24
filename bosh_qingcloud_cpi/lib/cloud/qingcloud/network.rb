@@ -21,7 +21,6 @@ module Bosh::QingCloud
 
       @name = name
       @ip = spec["ip"]
-      print "Network ip =#{@ip}\r\n"
       @cloud_properties = spec["cloud_properties"]
     end
 

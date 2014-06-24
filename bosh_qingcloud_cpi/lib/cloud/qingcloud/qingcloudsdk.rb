@@ -16,7 +16,7 @@ module Bosh::QingCloud
     def describe_instances(instance_id)
       instances = []
       instances << instance_id 
-      return @conn.describe_instances(instances,
+      ret = @conn.describe_instances(instances,
                                       image_id = [],
                                       instance_type = [],
                                       status = [],
@@ -24,6 +24,7 @@ module Bosh::QingCloud
                                       verbose = 0,
                                       offset = 0,
                                       limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def terminate_instances(instance_id)
@@ -40,16 +41,15 @@ module Bosh::QingCloud
 
     def describe_volumes(vm_id)
       volumes = []
-      volumes << vm_id
-      ret =  @conn.describe_volumes(volumes,
-          instance_id = [],
-          status = [],
-          search_word = [],
-          verbose = 0,
-          offset = 0,
-          limit = 50)
-      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
-      ret_info
+      volumes << volume_id
+      ret = @conn.describe_volumes(volumes,
+                                    instance_id = [],
+                                    status = [],
+                                    search_word = [],
+                                    verbose = 0,
+                                    offset = 0,
+                                    limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def create_volumes(size, volume_name, count)
@@ -80,8 +80,7 @@ module Bosh::QingCloud
                                   search_word = [],
                                   offset = 0,
                                   limit = 0)
-      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
-      ret_info				  
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def create_images(instance_id)
@@ -106,8 +105,8 @@ module Bosh::QingCloud
     def create_snapshots(resources, snapshot_name)
       resources_id = []
       resources_id << resources
-
-      return @conn.create_snapshots(resources_id, snapshot_name, is_full=0)
+      ret = @conn.create_snapshots(resources_id, snapshot_name, is_full=1)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     def delete_snapshots(snapshots)
@@ -119,7 +118,7 @@ module Bosh::QingCloud
     def describe_snapshot(snapshot_id)
       snapshots = []
       snapshots << snapshot_id
-      return @conn.describe_snapshots(snapshots,
+      ret = @conn.describe_snapshots(snapshots,
                                       resource_id = [],
                                       snapshot_type = 1,
                                       root_id = [],
@@ -128,6 +127,7 @@ module Bosh::QingCloud
                                       search_word = [],
                                       offset = 0,
                                       limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
     
     def describe_security_groups()

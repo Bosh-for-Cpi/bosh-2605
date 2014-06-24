@@ -62,7 +62,15 @@ module Bosh::QingCloud
       cloud_error("Timed out reading instance metadata, " \
                   "please make sure CPI is running on EC2 instance")
     end
-
+    
+    ##
+    # Generates an unique name
+    #
+    # @return [String] Unique name
+    def generate_unique_name
+      SecureRandom.uuid
+    end
+    
     ##
     # Create an EC2 instance and wait until it's in running state
     # @param [String] agent_id agent id associated with new VM
@@ -85,7 +93,7 @@ module Bosh::QingCloud
       with_thread_name("create_vm(#{agent_id}, ...)") do
 
         @logger.info('Creating new server...')
-        server_name = "vm-#{stemcell_id}"
+        server_name = "vm-#{generate_unique_name}"
         network_configurator = NetworkConfigurator.new(network_spec)
 
         #get security groups
@@ -132,8 +140,7 @@ module Bosh::QingCloud
 
         #associate floationg ip
         @logger.info("Configuring network for server `#{instance_info["instances"][0]}'...")
-        ret = network_configurator.configure(@qingcloudsdk, instance_info)
-
+        network_configurator.configure(@qingcloudsdk, instance_info)
 
       end
         
@@ -215,13 +222,12 @@ module Bosh::QingCloud
         if volume_info["total_count"] == 1
 
           state = volume_info["volume_set"][0]["status"]
-          
           if  state != "available"
             cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
           end
 
           ret = @qingcloudsdk.delete_volumes(disk_id)
-          wait_resource("volume", :deleted, :status, true)
+          wait_resource(disk_id, "deleted", method(:get_disk_status))
         else
           @logger.info("Volume `#{disk_id}' not found. Skipping.")
         end
@@ -234,21 +240,32 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to attach
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
-        # instance = @ec2.instances[instance_id]
-        # volume = @ec2.volumes[disk_id]
+        instance = has_vm?(instance_id)
+        unless instance["total_count"] == 1
+          raise "does not exist the instance"
+        end  
+        
+        ret_info = get_disks(disk_id)
+        unless ret_info["total_count"] == 1
+          raise "does not exist the disk"
+        end 
+        device_name=  ret_info["volume_set"][0]["volume_name"] 
+        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
 
-        # device_name = attach_ebs_volume(instance, volume)
+        if deivice_instance_id.nil? || deivice_instance_id.empty?
+          attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
 
-        attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
+          # wait_resource(disk_id, "in-use", method(:get_disk_status))
 
-        # ResourceWait.for_volume(volume: volume, transition_status: :in-use)
-        # update_agent_settings(instance) do |settings|
-        #   settings["disks"] ||= {}
-        #   settings["disks"]["persistent"] ||= {}
-        #   settings["disks"]["persistent"][disk_id] = device_name
-        # end
+          update_agent_settings(instance_id) do |settings|
+            settings["disks"] ||= {}
+            settings["disks"]["persistent"] ||= {}
+            settings["disks"]["persistent"][disk_id] = device_name
+          end
+        end
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
-        # p attachment
+
+        device_name
       end
     end
 
@@ -257,12 +274,22 @@ module Bosh::QingCloud
     # @param [String] disk_id EBS volume id of the disk to detach
     def detach_disk(instance_id, disk_id)
       with_thread_name("detach_disk(#{instance_id}, #{disk_id})") do
-        #instance = @ec2.instances[instance_id]
-        #volume = @ec2.volumes[disk_id]
+        instance = has_vm?(instance_id)
+        unless instance["total_count"] == 1
+          raise "does not exist the instance"
+        end 
+        ret_info = get_disks(disk_id)
+        unless ret_info["total_count"] == 1
+          raise "does not exist the disk"
+        end 
+        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
+        if deivice_instance_id.nil? || deivice_instance_id.empty?
+          raise "instance does not exist the disk"
+        end
 
         detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
 
-        #update_agent_settings(instance) do |settings|
+        #update_agent_settings(instance_id) do |settings|
         #  settings["disks"] ||= {}
         #  settings["disks"]["persistent"] ||= {}
         #  settings["disks"]["persistent"].delete(disk_id)
@@ -283,8 +310,7 @@ module Bosh::QingCloud
 
     def get_disk_status(volume_id)
       with_thread_name("get_disk_status(#{volume_id})") do
-        ret = @qingcloudsdk.describe_volumes(volume_id)
-        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        ret_info = @qingcloudsdk.describe_volumes(volume_id)
         return ret_info["volume_set"][0]["status"] 
       end
     end
@@ -292,9 +318,7 @@ module Bosh::QingCloud
     def get_vm_status(instance_id)
       with_thread_name("get_vm_status(#{instance_id})") do
         ret = @qingcloudsdk.describe_instances(instance_id)
-
-        ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
-        return ret_info["instance_set"][0]["status"]
+        return ret["instance_set"][0]["status"]
       end
     end
     # Take snapshot of disk
@@ -305,25 +329,11 @@ module Bosh::QingCloud
 
         ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
 
-        #volume = @ec2.volumes[disk_id]
-        #devices = []
-        #volume.attachments.each {|attachment| devices << attachment.device}
-
-        #name = [:deployment, :job, :index].collect { |key| metadata[key] }
-        #name << devices.first.split('/').last unless devices.empty?
-
-        #snapshot = volume.create_snapshot(name.join('/'))
-        sleep(20)     #for resource_wait!!
+        #snapshot_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+        
+        wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
+        ret["snapshots"][0]
         logger.info("snapshot '#{snapshot_name}' of volume '#{resources}' created")
-
-        #[:agent_id, :instance_id, :director_name, :director_uuid].each do |key|
-        #  TagManager.tag(snapshot, key, metadata[key])
-        #end
-        #TagManager.tag(snapshot, :device, devices.first) unless devices.empty?
-        #TagManager.tag(snapshot, 'Name', name.join('/'))
-
-        #ResourceWait.for_snapshot(snapshot: snapshot, state: :completed)
-        #snapshot.id
       end
     end
 
@@ -332,29 +342,29 @@ module Bosh::QingCloud
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
         snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        #p snapshot_info
         if snapshot_info["total_count"] == 1
           status = snapshot_info["snapshot_set"][0]["status"]
-          p status
-        end
+          #p status
 
-        if status == "available"
-          ret = @qingcloudsdk.delete_snapshots(snapshot_id)
-          p "delete successfully..."
-        else
-          p "cannot deleted..."
+          if status == "available"
+            ret = @qingcloudsdk.delete_snapshots(snapshot_id)
+            snapshot_after_delete = @qingcloudsdk.describe_snapshot(snapshot_id)
+            #snapshot_info2 = RubyPython::Conversion.ptorDict(snapshot_after_delete.pObject.pointer)
+            #p snapshot_after_delete
+            wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
+          else
+          logger.info("snapshot `#{snapshot_id}' not found. Skipping.")
+          end
         end
-        #  if snapshot.status == :in_use
-        #    raise Bosh::Clouds::CloudError, "snapshot '#{snapshot.id}' can not be deleted as it is in use"
-        #  end
-
-        #  snapshot.delete
-        #logger.info("snapshot '#{snapshot_id}' deleted")
       end
     end
 
-    def get_snapshot(snapshot_id)
+    def get_snapshot_status(snapshot_id)
       with_thread_name("get_snapshot(#{snapshot_id})") do
         ret = @qingcloudsdk.describe_snapshot(snapshot_id)
+        #p ret 
+        return ret["snapshot_set"][0]["status"]
       end
     end
 
@@ -376,7 +386,7 @@ module Bosh::QingCloud
 
         network_configurator.configure(@ec2, instance)
 
-        update_agent_settings(instance) do |settings|
+        update_agent_settings(instance_id) do |settings|
           settings["networks"] = network_spec
         end
       end
@@ -557,14 +567,14 @@ module Bosh::QingCloud
                                              registry_password)
     end
 
-    def update_agent_settings(instance)
+    def update_agent_settings(instance_id)
       unless block_given?
         raise ArgumentError, "block is not provided"
       end
 
-      settings = registry.read_settings(instance.id)
+      settings = registry.read_settings(instance_id)
       yield settings
-      registry.update_settings(instance.id, settings)
+      registry.update_settings(instance_id, settings)
     end
 
     def attach_ebs_volume(instance, volume)

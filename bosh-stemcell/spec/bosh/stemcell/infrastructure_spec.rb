@@ -6,6 +6,7 @@ module Bosh::Stemcell
     describe '.for' do
       it 'returns the correct infrastrcture' do
         expect(Infrastructure.for('openstack')).to be_an(Infrastructure::OpenStack)
+        expect(Infrastructure.for('qingcloud')).to be_an(Infrastructure::QingCloud)
         expect(Infrastructure.for('aws')).to be_an(Infrastructure::Aws)
         expect(Infrastructure.for('vsphere')).to be_a(Infrastructure::Vsphere)
         expect(Infrastructure.for('warden')).to be_a(Infrastructure::Warden)
@@ -67,6 +68,7 @@ module Bosh::Stemcell
       expect(subject).to eq(Infrastructure.for('null'))
 
       expect(subject).to_not eq(Infrastructure.for('openstack'))
+      expect(subject).to_not eq(Infrastructure.for('qingcloud'))
       expect(subject).to_not eq(Infrastructure.for('aws'))
       expect(subject).to_not eq(Infrastructure.for('vsphere'))
     end
@@ -89,6 +91,16 @@ module Bosh::Stemcell
     it { should_not be_light }
 
     it { should eq Infrastructure.for('openstack') }
+    it { should_not eq Infrastructure.for('qingcloud') }
+  end
+
+    describe Infrastructure::QingCloud do
+    its(:name)              { should eq('qingcloud') }
+    its(:hypervisor)        { should eq('kvm') }
+    its(:default_disk_size) { should eq(10240) }
+    it { should_not be_light }
+
+    it { should eq Infrastructure.for('qingcloud') }
     it { should_not eq Infrastructure.for('vsphere') }
   end
 

@@ -48,6 +48,8 @@ module Bosh::Stemcell
         aws_stages
       when Infrastructure::OpenStack then
         openstack_stages
+      when Infrastructure::QingCloud then
+        qingcloud_stages
       when Infrastructure::Vsphere then
         vsphere_stages
       when Infrastructure::Vcloud then
@@ -62,6 +64,14 @@ module Bosh::Stemcell
         centos_openstack_stages
       else
         default_openstack_stages
+      end
+    end
+
+    def qingcloud_stages
+      if operating_system.instance_of?(OperatingSystem::Centos)
+        centos_qingcloud_stages
+      else
+        default_qingcloud_stages
       end
     end
 
@@ -164,6 +174,24 @@ module Bosh::Stemcell
       ]
     end
 
+    def centos_qingcloud_stages
+      [
+        # Misc
+        :system_qingcloud_network_centos,
+        :system_parameters,
+        # Finalisation,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_qingcloud_qcow2,
+        :image_qingcloud_prepare_stemcell,
+        # Final stemcell
+        :stemcell_qingcloud,
+      ]
+    end
+
     def aws_stages
       [
         # Misc
@@ -202,6 +230,27 @@ module Bosh::Stemcell
         :image_openstack_prepare_stemcell,
         # Final stemcell
         :stemcell_openstack,
+      ]
+    end
+
+    def default_qingcloud_stages
+      [
+        # Misc
+        :system_qingcloud_network,
+        :system_qingcloud_clock,
+        :system_qingcloud_modules,
+        :system_parameters,
+        # Finalisation,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        # Image/bootloader
+        :image_create,
+        :image_install_grub,
+        :image_qingcloud_qcow2,
+        :image_qingcloud_prepare_stemcell,
+        # Final stemcell
+        :stemcell_qingcloud,
       ]
     end
 
