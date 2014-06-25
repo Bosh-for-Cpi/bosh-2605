@@ -476,24 +476,15 @@ module Bosh::QingCloud
     # @param [String] vm vm id that was once returned by {#create_vm}
     # @param [Hash] metadata metadata key/value pairs
     # @return [void]
-    def set_vm_metadata(vm, metadata)
-      instance = @ec2.instances[vm]
+    def set_vm_metadata(instance_id, metadata)
+      with_thread_name("set_vm_metadata(#{instance_id}, ...)") do
+          server = @qingcloudsdk.describe_instances(instance_id)
+          cloud_error("Server `#{instance_id}' not found") unless server
 
-      metadata.each_pair do |key, value|
-        TagManager.tag(instance, key, value)
+          metadata.each do |name, value|
+            TagManager.tag(server, name, value)
+          end
       end
-
-      job = metadata[:job]
-      index = metadata[:index]
-
-      if job && index
-        name = "#{job}/#{index}"
-      elsif metadata[:compiling]
-        name = "compiling/#{metadata[:compiling]}"
-      end
-      TagManager.tag(instance, "Name", name) if name
-    rescue AWS::EC2::Errors::TagLimitExceeded => e
-      logger.error("could not tag #{instance.id}: #{e.message}")
     end
 
     def find_ebs_device(sd_name)
