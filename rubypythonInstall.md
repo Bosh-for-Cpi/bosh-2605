@@ -95,7 +95,6 @@ ret = conn.describe_instances(
         status=['running', 'stopped']
         
       )
-
 print ret
 
 正常输出：
