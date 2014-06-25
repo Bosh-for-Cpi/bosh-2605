@@ -319,7 +319,11 @@ module Bosh::QingCloud
     def get_vm_status(instance_id)
       with_thread_name("get_vm_status(#{instance_id})") do
         ret = @qingcloudsdk.describe_instances(instance_id)
-        return ret["instance_set"][0]["status"]
+        status = ""
+        if(ret["total_count"] == 1)
+          ret["instance_set"][0]["status"]
+        end
+        status
       end
     end
 
@@ -482,7 +486,7 @@ module Bosh::QingCloud
           cloud_error("Server `#{instance_id}' not found") unless server
 
           metadata.each do |name, value|
-            TagManager.tag(server, name, value)
+            TagManager.tag(server.to_json, name, value)
           end
       end
     end
