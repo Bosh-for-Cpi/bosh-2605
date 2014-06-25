@@ -21,8 +21,8 @@ module Bosh::Dev::Qingcloud
           'BOSH_QINGCLOUD_MANUAL_IP' => 'ip',
           'BOSH_QINGCLOUD_NET_ID' => 'net_id',
           'BOSH_QINGCLOUD_REGION' => 'region',
-		  'BOSH_QINGCLOUD_ACCESS_KEY_ID' => 'access_key_id',
-		  'BOSH_QINGCLOUD_SECRET_ACCESS_KEY' => 'secret_access_key',
+          'BOSH_QINGCLOUD_ACCESS_KEY_ID' => 'access_key_id',
+          'BOSH_QINGCLOUD_SECRET_ACCESS_KEY' => 'secret_access_key',
           'BOSH_QINGCLOUD_PRIVATE_KEY' => 'private_key_path',
         )
       end
@@ -53,8 +53,8 @@ cloud:
   properties:
     qingcloud:
       region: region
-	  access_key_id: access_key_id
-	  secret_access_key: secret_access_key
+      access_key_id: access_key_id
+      secret_access_key: secret_access_key
       endpoint_type: publicURL
       default_key_name: jenkins
       default_security_groups:
@@ -108,8 +108,8 @@ cloud:
   properties:
     qingcloud:
       region: region
-	  access_key_id: access_key_id
-	  secret_access_key: secret_access_key
+      access_key_id: access_key_id
+      secret_access_key: secret_access_key
       endpoint_type: publicURL
       default_key_name: jenkins
       default_security_groups:
@@ -190,11 +190,9 @@ YAML
     describe '#cpi_options' do
       before do
         env.merge!(
-          'BOSH_QINGCLOUD_AUTH_URL' => 'fake-auth-url',
-          'BOSH_QINGCLOUD_USERNAME' => 'fake-username',
-          'BOSH_QINGCLOUD_API_KEY' => 'fake-api-key',
-          'BOSH_QINGCLOUD_TENANT' => 'fake-tenant',
           'BOSH_QINGCLOUD_REGION' => 'fake-region',
+          'BOSH_ACCESS_KEY_ID' =>  'fake-access-key-id',
+          'BOSH_SECRET_ACCESS_KEY' => 'fake-secret-access-key',
           'BOSH_QINGCLOUD_PRIVATE_KEY' => 'fake-private-key-path',
         )
       end
@@ -202,11 +200,9 @@ YAML
       it 'returns cpi options' do
         expect(subject.cpi_options).to eq(
           'qingcloud' => {
-            'auth_url' => 'fake-auth-url',
-            'username' => 'fake-username',
-            'api_key' => 'fake-api-key',
-            'tenant' => 'fake-tenant',
             'region' => 'fake-region',
+            'access_key_id' =>  'fake-access-key-id',
+            'secret_access_key' => 'fake-secret-access-key',
             'endpoint_type' => 'publicURL',
             'default_key_name' => 'jenkins',
             'default_security_groups' => ['default'],

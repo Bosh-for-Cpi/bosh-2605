@@ -39,7 +39,7 @@ module Bosh::QingCloud
       return @conn.restart_instances(instances)
     end
 
-    def describe_volumes(vm_id)
+    def describe_volumes(volume_id)
       volumes = []
       volumes << volume_id
       ret = @conn.describe_volumes(volumes,
