@@ -448,7 +448,7 @@ module Bosh::QingCloud
     def create_stemcell(image_path, stemcell_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
         
-        stemcell_info = @qingcloudsdk.describe_images_by_name("micro_bosh_0625")
+        stemcell_info = @qingcloudsdk.describe_images_by_name("qingcloud_stemcell")
         if stemcell_info["total_count"] == 0
           raise "can't find the stemcell"
         end
