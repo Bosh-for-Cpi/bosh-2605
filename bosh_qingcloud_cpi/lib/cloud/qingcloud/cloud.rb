@@ -544,6 +544,8 @@ module Bosh::QingCloud
           #max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
           logger:             qingcloud_logger
       }
+      @default_key_name = qingcloud_properties["default_key_name"]
+      @default_security_groups = qingcloud_properties["default_security_groups"]
       @wait_resource_poll_interval = qingcloud_properties["wait_resource_poll_interval"] || 5
       @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
       #aws_params[:proxy_uri] = aws_properties['proxy_uri'] if aws_properties['proxy_uri']
