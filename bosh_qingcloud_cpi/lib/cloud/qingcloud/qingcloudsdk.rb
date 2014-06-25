@@ -83,6 +83,21 @@ module Bosh::QingCloud
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
+    def describe_images_by_name(stemcell_name)
+      search_word = stemcell_name || []
+      ret = @conn.describe_images(images = [],
+                                  os_family = [],
+                                  processor_type = [],
+                                  status = [],
+                                  visibility = [],
+                                  provider = [],
+                                  verbose = 0,
+                                  search_word,
+                                  offset = 0,
+                                  limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+    end
+
     def create_images(instance_id)
       return @conn.capture_instance(instance_id,
                                     image_name = "")

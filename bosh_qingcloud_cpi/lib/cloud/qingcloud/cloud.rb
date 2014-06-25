@@ -290,11 +290,11 @@ module Bosh::QingCloud
 
         detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
 
-        #update_agent_settings(instance_id) do |settings|
-        #  settings["disks"] ||= {}
-        #  settings["disks"]["persistent"] ||= {}
-        #  settings["disks"]["persistent"].delete(disk_id)
-        #end
+        update_agent_settings(instance_id) do |settings|
+         settings["disks"] ||= {}
+         settings["disks"]["persistent"] ||= {}
+         settings["disks"]["persistent"].delete(disk_id)
+        end
 
         #detach_ebs_volume(instance, volume)
 
@@ -447,7 +447,13 @@ module Bosh::QingCloud
     # @return [String] EC2 AMI name of the stemcell
     def create_stemcell(image_path, stemcell_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
-        image_id = "img-xb1ddj1v"
+        
+        stemcell_info = @qingcloudsdk.describe_images_by_name("micro_bosh_0625")
+        if stemcell_info["total_count"] == 0
+          raise "can't find the stemcell"
+        end
+
+        image_id = stemcell_info["image_set"][0]["image_id"]
       end
     end
 
