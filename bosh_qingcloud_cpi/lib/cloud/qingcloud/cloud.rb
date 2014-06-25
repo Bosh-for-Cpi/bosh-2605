@@ -29,7 +29,7 @@ module Bosh::QingCloud
       @logger = Bosh::Clouds::Config.logger
 
       initialize_qingcloud
-      #initialize_registry
+      initialize_registry
 
       @metadata_lock = Mutex.new
       print "initialize Finish!!\r\n"
@@ -447,7 +447,7 @@ module Bosh::QingCloud
     # @return [String] EC2 AMI name of the stemcell
     def create_stemcell(image_path, stemcell_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
-        image_id = "img-j557eu33"
+        image_id = "img-xb1ddj1v"
       end
     end
 
