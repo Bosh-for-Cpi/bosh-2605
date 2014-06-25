@@ -32,10 +32,15 @@ ln -s /usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0  /usr/lib/libpython2.7.so.1.
 3、gem install ffi
 
 4、安装rubypython，修改了部分代码
+
 从git上下载修改后的源码安装
+
 git clone https://github.com/Bosh-for-Cpi/rubypython.git
+
 进入rubypython文件夹后，
+
 gem build rubypython.gemspec
+
 gem install rubypython-0.6.3.gem
 
 安装qingcloud sdk
