@@ -321,7 +321,7 @@ module Bosh::QingCloud
         ret = @qingcloudsdk.describe_instances(instance_id)
         status = ""
         if(ret["total_count"] == 1)
-          ret["instance_set"][0]["status"]
+          status = ret["instance_set"][0]["status"]
         end
         status
       end
