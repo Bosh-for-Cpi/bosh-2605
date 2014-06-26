@@ -481,14 +481,14 @@ module Bosh::QingCloud
     # @param [Hash] metadata metadata key/value pairs
     # @return [void]
     def set_vm_metadata(instance_id, metadata)
-      with_thread_name("set_vm_metadata(#{instance_id}, ...)") do
-          server = @qingcloudsdk.describe_instances(instance_id)
-          cloud_error("Server `#{instance_id}' not found") unless server
+      # with_thread_name("set_vm_metadata(#{instance_id}, ...)") do
+      #     server = @qingcloudsdk.describe_instances(instance_id)
+      #     cloud_error("Server `#{instance_id}' not found") unless server
 
-          metadata.each do |name, value|
-            TagManager.tag(server.to_json, name, value)
-          end
-      end
+      #     metadata.each do |name, value|
+      #       TagManager.tag(server.to_json, name, value)
+      #     end
+      # end
     end
 
     def find_ebs_device(sd_name)
