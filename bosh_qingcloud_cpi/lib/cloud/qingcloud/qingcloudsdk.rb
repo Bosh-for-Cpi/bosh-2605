@@ -88,7 +88,7 @@ module Bosh::QingCloud
       ret = @conn.describe_images(images = [],
                                   os_family = [],
                                   processor_type = [],
-                                  status = [],
+                                  status = ["available"],
                                   visibility = [],
                                   provider = [],
                                   verbose = 0,
