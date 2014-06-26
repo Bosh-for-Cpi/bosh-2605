@@ -17,4 +17,4 @@ usermod -s /bin/bash vcap;
 
 4、解压的时候tar pzxvf vcap.microbosh.tgz
 
-5、按同样的方法压缩/解压缩 /etc/sv /etc/service两个目录
+5、按同样的方法压缩/解压缩 /etc/sv ||  /etc/service两个目录
