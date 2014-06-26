@@ -1,5 +1,5 @@
 1、压缩/var/vcap目录，注意需要保留原有的文件夹属性
-tar pzcvf  /var/vcap vcap.microbosh.tgz
+tar pzcvf  vcap.microbosh.tgz /var/vcap
 
 2、降压缩包拷贝到新的机子上去
 
@@ -16,3 +16,5 @@ usermod -G admin,adm,audio,cdrom,dialout,floppy,video,dip,plugdev vcap;
 usermod -s /bin/bash vcap;
 
 4、解压的时候tar pzxvf vcap.microbosh.tgz
+
+5、按同样的方法压缩/解压缩 /etc/sv /etc/service两个目录
