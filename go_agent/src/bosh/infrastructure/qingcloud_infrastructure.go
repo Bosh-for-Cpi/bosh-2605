@@ -18,7 +18,7 @@ type qingcloudInfrastructure struct {
 	logger             boshlog.Logger
 }
 
-func NewqingcloudInfrastructure(
+func NewQingcloudInfrastructure(
 	metadataService MetadataService,
 	registry Registry,
 	platform boshplatform.Platform,
