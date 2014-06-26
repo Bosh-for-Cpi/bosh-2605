@@ -134,7 +134,7 @@ module Bosh::QingCloud
           wait_resource(instance_info["instances"][0], "running", method(:get_vm_status))
         rescue Bosh::Clouds::CloudError => e
           @logger.warn("Failed to create server: #{e.message}")
-          @qingcloudsdk.(instance_info["instances"][0])
+          @qingcloudsdk.terminate_instances(instance_info["instances"][0])
           raise Bosh::Clouds::VMCreationFailed.new(true)
         end
 
