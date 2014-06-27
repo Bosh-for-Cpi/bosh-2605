@@ -142,12 +142,12 @@ module Bosh::QingCloud
         @logger.info("Configuring network for server `#{instance_info["instances"][0]}'...")
         network_configurator.configure(@qingcloudsdk, instance_info)
 
-        @logger.info("Updating settings for server `#{server.id}'...")
+        @logger.info("Updating settings for server `#{instance_info["instances"][0]}'...")
         settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
                                           flavor_has_ephemeral_disk?(resource_pool['instance_type']))
         @registry.update_settings(instance_info["instances"][0], settings)
+        instance_info["instances"][0]
       end
-      instance_info["instances"][0]
     end
 
     def default_ec2_endpoint
@@ -703,7 +703,7 @@ module Bosh::QingCloud
 
       settings['disks']['ephemeral'] = has_ephemeral ? '/dev/sdb' : nil
       settings['env'] = environment if environment
-      settings.merge(@agent_properties)
+      settings.merge(agent_properties)
     end
 
   end
