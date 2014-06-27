@@ -142,8 +142,12 @@ module Bosh::QingCloud
         @logger.info("Configuring network for server `#{instance_info["instances"][0]}'...")
         network_configurator.configure(@qingcloudsdk, instance_info)
 
+        @logger.info("Updating settings for server `#{server.id}'...")
+        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
+                                          flavor_has_ephemeral_disk?(resource_pool['instance_type']))
+        @registry.update_settings(server_name, settings)
       end
-        
+      instance_info["instances"][0]
     end
 
     def default_ec2_endpoint
@@ -658,37 +662,63 @@ module Bosh::QingCloud
       raise ArgumentError, "missing configuration parameters > #{missing_keys.join(', ')}" unless missing_keys.empty?
     end
 
-    # Generates initial agent settings. These settings will be read by agent
-    # from AWS registry (also a BOSH component) on a target instance. Disk
-    # conventions for amazon are:
-    # system disk: /dev/sda
-    # ephemeral disk: /dev/sdb
-    # EBS volumes can be configured to map to other device names later (sdf
-    # through sdp, also some kernels will remap sd* to xvd*).
+    ##
+    # Checks if the QingCloud instance type has ephemeral disk
     #
+    # @param [Fog::Compute::OpenStack::Flavor] OpenStack flavor
+    # @return [Boolean] true if flavor has ephemeral disk, false otherwise
+    def flavor_has_ephemeral_disk?(flavor)
+    # flavor.ephemeral.nil? || flavor.ephemeral.to_i <= 0 ? false : true
+      false
+    end
+
+    ##
+    # Generates initial agent settings. These settings will be read by Bosh Agent from Bosh Registry on a target
+    # server. Disk conventions in Bosh Agent for OpenStack are:
+    # - system disk: /dev/sda
+    # - ephemeral disk: /dev/sdb
+    # - persistent disks: /dev/sdc through /dev/sdz
+    # As some kernels remap device names (from sd* to vd* or xvd*), Bosh Agent will lookup for the proper device name
+    #
+    # @param [String] server_name Name of the OpenStack server (will be picked
+    #   up by agent to fetch registry settings)
     # @param [String] agent_id Agent id (will be picked up by agent to
     #   assume its identity
     # @param [Hash] network_spec Agent network spec
-    # @param [Hash] environment
-    # @param [String] root_device_name root device, e.g. /dev/sda1
-    # @return [Hash]
-    def initial_agent_settings(agent_id, network_spec, environment, root_device_name)
+    # @param [Hash] environment Environment settings
+    # @param [Boolean] has_ephemeral Has Ephemeral disk?
+    # @return [Hash] Agent settings
+    def initial_agent_settings(server_name, agent_id, network_spec, environment, has_ephemeral)
       settings = {
-          "vm" => {
-              "name" => "vm-#{SecureRandom.uuid}"
+          'vm' => {
+              'name' => server_name
           },
-          "agent_id" => agent_id,
-          "networks" => network_spec,
-          "disks" => {
-              "system" => root_device_name,
-              "ephemeral" => "/dev/sdb",
-              "persistent" => {}
+          'agent_id' => agent_id,
+          'networks' => network_spec,
+          'disks' => {
+              'system' => '/dev/sda',
+              'persistent' => {}
           }
       }
 
-      settings["env"] = environment if environment
-      settings.merge(agent_properties)
+      settings['disks']['ephemeral'] = has_ephemeral ? '/dev/sdb' : nil
+      settings['env'] = environment if environment
+      settings.merge(@agent_properties)
     end
+
+    ##
+    # Updates the agent settings
+    #
+    # @param [Fog::Compute::OpenStack::Server] server OpenStack server
+    def update_agent_settings(server)
+      raise ArgumentError, 'Block is not provided' unless block_given?
+
+      @logger.info("Updating settings for server `#{server.id}'...")
+      settings = @registry.read_settings(server.name)
+      yield settings
+      @registry.update_settings(server.name, settings)
+    end
+
   end
 end
 
