@@ -96,15 +96,16 @@ func (ms concreteMetadataService) GetRegistryEndpoint() (string, error) {
 	// endpoint := userData.Registry.Endpoint
 	// nameServers := userData.DNS.Nameserver
 
-	endpoint := "http://10.60.32.150:25777"
-	nameServers := ["10.60.32.150"]
-
+	var endpoint = "http://10.60.32.150:25777"
+    var nameServers []string
+    nameServers[0] = "10.60.32.150"
 
 	if len(nameServers) > 0 {
-		endpoint, err = ms.resolveRegistryEndpoint(endpoint, nameServers)
+		endpoint_new, err := ms.resolveRegistryEndpoint(endpoint, nameServers)
 		if err != nil {
 			return "", bosherr.WrapError(err, "Resolving registry endpoint")
 		}
+		endpoint = endpoint_new
 	}
 
 	return endpoint, nil
