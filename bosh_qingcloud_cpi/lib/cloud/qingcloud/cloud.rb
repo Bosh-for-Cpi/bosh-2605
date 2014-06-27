@@ -145,7 +145,7 @@ module Bosh::QingCloud
         @logger.info("Updating settings for server `#{server.id}'...")
         settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
                                           flavor_has_ephemeral_disk?(resource_pool['instance_type']))
-        @registry.update_settings(server_name, settings)
+        @registry.update_settings(instance_info["instances"][0], settings)
       end
       instance_info["instances"][0]
     end
@@ -704,19 +704,6 @@ module Bosh::QingCloud
       settings['disks']['ephemeral'] = has_ephemeral ? '/dev/sdb' : nil
       settings['env'] = environment if environment
       settings.merge(@agent_properties)
-    end
-
-    ##
-    # Updates the agent settings
-    #
-    # @param [Fog::Compute::OpenStack::Server] server OpenStack server
-    def update_agent_settings(server)
-      raise ArgumentError, 'Block is not provided' unless block_given?
-
-      @logger.info("Updating settings for server `#{server.id}'...")
-      settings = @registry.read_settings(server.name)
-      yield settings
-      @registry.update_settings(server.name, settings)
     end
 
   end
