@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -73,13 +74,14 @@ func (ms concreteMetadataService) GetInstanceID() (string, error) {
 }
 
 func (ms concreteMetadataService) GetServerName() (string, error) {
-	userData, err := ms.getUserData()
-	if err != nil {
-		return "", bosherr.WrapError(err, "Getting user data")
-	}
+	// userData, err := ms.getUserData()
+	// if err != nil {
+	// 	return "", bosherr.WrapError(err, "Getting user data")
+	// }
+    
+	// serverName := userData.Server.Name
 
-	serverName := userData.Server.Name
-
+	serverName, _ := os.Hostname()
 	if len(serverName) == 0 {
 		return "", bosherr.New("Empty server name")
 	}
@@ -97,8 +99,7 @@ func (ms concreteMetadataService) GetRegistryEndpoint() (string, error) {
 	// nameServers := userData.DNS.Nameserver
 
 	var endpoint = "http://10.60.32.150:25777"
-    var nameServers []string
-    nameServers[0] = "10.60.32.150"
+    nameServers := []string{"10.60.32.150"}
 
 	if len(nameServers) > 0 {
 		endpoint_new, err := ms.resolveRegistryEndpoint(endpoint, nameServers)
