@@ -88,13 +88,17 @@ func (ms concreteMetadataService) GetServerName() (string, error) {
 }
 
 func (ms concreteMetadataService) GetRegistryEndpoint() (string, error) {
-	userData, err := ms.getUserData()
-	if err != nil {
-		return "", bosherr.WrapError(err, "Getting user data")
-	}
+	// userData, err := ms.getUserData()
+	// if err != nil {
+	// 	return "", bosherr.WrapError(err, "Getting user data")
+	// }
 
-	endpoint := userData.Registry.Endpoint
-	nameServers := userData.DNS.Nameserver
+	// endpoint := userData.Registry.Endpoint
+	// nameServers := userData.DNS.Nameserver
+
+	endpoint := "http://10.60.32.150:25777"
+	nameServers := ["10.60.32.150"]
+
 
 	if len(nameServers) > 0 {
 		endpoint, err = ms.resolveRegistryEndpoint(endpoint, nameServers)
