@@ -26,7 +26,7 @@ module Bosh::Registry
     #        check will be performed to see if it instance id
     #        actually has this IP address according to the IaaS.
     def read_settings(instance_id, remote_ip = nil)
-      check_instance_ips(remote_ip, instance_id) if remote_ip
+      # check_instance_ips(remote_ip, instance_id) if remote_ip
 
       get_instance(instance_id).settings
     end

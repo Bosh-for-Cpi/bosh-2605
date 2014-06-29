@@ -24,5 +24,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'thin',      '~>1.5.0'
   s.add_dependency 'yajl-ruby', '~>1.1.0'
   s.add_dependency 'fog',       '~>1.14.0'
+  s.add_dependency 'rubypython','=0.6.3'
   s.add_dependency 'aws-sdk',   '1.32.0'
 end

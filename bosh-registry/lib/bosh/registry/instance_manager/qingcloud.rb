@@ -1,10 +1,20 @@
 # Copyright (c) 2009-2013 VMware, Inc.
+require "rubypython"
 
 module Bosh::Registry
 
   class InstanceManager
 
-    class Qingcloud < InstanceManager
+    class Qingcloud  < InstanceManager
+
+      def qingcloud_init(qingcloud_params)
+        region = qingcloud_params[:qingcloud_region]
+        access_key_id = qingcloud_params[:qingcloud_access_key_id]
+        secret_access_key = qingcloud_params[:qingcloud_secret_access_key]
+        RubyPython.start
+        @qingcloudpick = RubyPython.import("qingcloud.iaas")
+        @conn = @qingcloudpick.connect_to_zone(region, access_key_id, secret_access_key)
+      end
 
       def initialize(cloud_config)
         validate_options(cloud_config)
@@ -24,7 +34,7 @@ module Bosh::Registry
       end
 
       def qingcloud
-        @qingcloud ||= Bosh::QingCloud::QingCloudSDK.new(@qingcloud_options)
+        @qingcloud ||= qingcloud_init(@qingcloud_options)
       end
       
       def validate_options(cloud_config)
@@ -37,13 +47,27 @@ module Bosh::Registry
         end
       end
 
+      def describe_instances(instance_id)
+        instances = []
+        instances << instance_id 
+        ret = qingcloud.describe_instances(instances,
+                                      image_id = [],
+                                      instance_type = [],
+                                      status = [],
+                                      search_word = [],
+                                      verbose = 0,
+                                      offset = 0,
+                                      limit = 0)
+        return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      end
+
       # Get the list of IPs belonging to this instance
       def instance_ips(instance_id)
         # If we get an Unauthorized error, it could mean that the QingCloud auth token has expired, so we are
         # going renew the fog connection one time to make sure that we get a new non-expired token.
         retried = false
         begin
-          instance  = qingcloud.servers.find { |s| s.name == instance_id }
+          instance  = describe_instances(instance_id)
         rescue Excon::Errors::Unauthorized => e
           unless retried
             retried = true
@@ -52,8 +76,10 @@ module Bosh::Registry
           end
           raise ConnectionError, "Unable to connect to QingCloud API: #{e.message}"
         end
-        raise InstanceNotFound, "Instance `#{instance_id}' not found" unless instance
-        return (instance.private_ip_addresses + instance.floating_ip_addresses).compact
+        raise InstanceNotFound, "Instance `#{instance_id}' not found   #{instance}" if  instance["total_count"] == 0
+        private_ip_addresses = ""  # instance["instance_set"][0]["vxnets"][0]["private_ip"]
+        floating_ip_addresses = ""  # instance["instance_set"][0]["eip"]["eip_addr"]
+        return (private_ip_addresses + floating_ip_addresses).compact
       end
 
     end
