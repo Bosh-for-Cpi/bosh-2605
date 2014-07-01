@@ -70,3 +70,16 @@ properties:
     default: publicURL
   openstack.connection_options:
     description: Hash containing optional connection parameters to the OpenStack API
+
+  # For QingCloud
+  qingcloud.region:
+    description: QingCloud region
+  qingcloud.access_key_id:
+    description: QingCloud access key id
+  qingcloud.secret_access_key:
+    description: QingCloud secret access key
+  qingcloud.endpoint_type:
+    description: QingCloud endpoint type (optional, by default publicURL)
+    default: publicURL
+  qingcloud.connection_options:
+    description: Hash containing optional connection parameters to the QingCloud API
