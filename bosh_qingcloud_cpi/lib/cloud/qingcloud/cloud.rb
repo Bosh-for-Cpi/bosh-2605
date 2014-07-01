@@ -260,7 +260,7 @@ module Bosh::QingCloud
 
         attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
 
-        # wait_resource(disk_id, "in-use", method(:get_disk_status))
+        wait_resource(disk_id, "in-use", method(:get_disk_status))
 
         update_agent_settings(instance_id) do |settings|
           settings["disks"] ||= {}
@@ -297,7 +297,7 @@ module Bosh::QingCloud
 
           logger.info("Detached `#{disk_id}' from `#{instance_id}'")
         else
-          @logger.info("Disk `#{volume.id}' is not attached to server `#{server.id}'. Skipping.")
+          @logger.info("Disk `#{instance_id}' is not attached to server `#{disk_id}'. Skipping.")
         end
       end
     end
