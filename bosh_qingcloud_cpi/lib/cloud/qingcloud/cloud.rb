@@ -1,6 +1,6 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 require 'cloud/qingcloud/stemcell_finder'
-require 'rubypython'
+
 module Bosh::QingCloud
 
   class Cloud < Bosh::Cloud
@@ -125,8 +125,8 @@ module Bosh::QingCloud
         @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
 
         instance_info = @qingcloudsdk.run_instances(stemcell_id, server_name, 
-          resource_pool['instance_type'], "vxnet-0", security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
-	
+        resource_pool['instance_type'], "vxnet-0", security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
+
         cloud_error("run_instances is failed, #{instance_info["message"]}") if instance_info["ret_code"] != 0
         @logger.info("Creating new server `#{server_name}'...")
 
@@ -246,28 +246,28 @@ module Bosh::QingCloud
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
         instance = has_vm?(instance_id)
-        unless instance["total_count"] == 1
-          raise "does not exist the instance"
-        end  
-        
+        cloud_error("Instance `#{instance_id}' not found") unless instance
+
         ret_info = get_disks(disk_id)
-        unless ret_info["total_count"] == 1
-          raise "does not exist the disk"
-        end 
-        device_name=  ret_info["volume_set"][0]["volume_name"] 
-        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
+        cloud_error("Volume `#{disk_id}' not found") if ret_info["total_count"] == 0
 
-        if deivice_instance_id.nil? || deivice_instance_id.empty?
-          attachment = @qingcloudsdk.attach_volumes([disk_id],instance_id)
+        device_name=  ret_info["volume_set"][0]["volume_name"]
+        disk_status = ret_info["volume_set"][0]["status"]
+        cloud_error('Disk is in use') if disk_status != "available"
+	
+        # need to judge if server has attach to a disk
+        #cloud_error('Server has too many disks attached')
 
-          # wait_resource(disk_id, "in-use", method(:get_disk_status))
+        attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
 
-          update_agent_settings(instance_id) do |settings|
-            settings["disks"] ||= {}
-            settings["disks"]["persistent"] ||= {}
-            settings["disks"]["persistent"][disk_id] = device_name
-          end
+        # wait_resource(disk_id, "in-use", method(:get_disk_status))
+
+        update_agent_settings(instance_id) do |settings|
+          settings["disks"] ||= {}
+          settings["disks"]["persistent"] ||= {}
+          settings["disks"]["persistent"][disk_id] = device_name
         end
+
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
 
         device_name
@@ -280,36 +280,31 @@ module Bosh::QingCloud
     def detach_disk(instance_id, disk_id)
       with_thread_name("detach_disk(#{instance_id}, #{disk_id})") do
         instance = has_vm?(instance_id)
-        unless instance["total_count"] == 1
-          raise "does not exist the instance"
-        end 
+        cloud_error("Instance `#{instance_id}' not found") unless instance
+
         ret_info = get_disks(disk_id)
-        unless ret_info["total_count"] == 1
-          raise "does not exist the disk"
-        end 
-        deivice_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
-        if deivice_instance_id.nil? || deivice_instance_id.empty?
-          raise "instance does not exist the disk"
+        cloud_error("Volume `#{disk_id}' not found") unless ret_info["total_count"] == 1
+
+        disk_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
+        if disk_instance_id == instance_id
+          detachment = @qingcloudsdk.detach_volumes(disk_id, instance_id)
+
+          update_agent_settings(instance_id) do |settings|
+           settings["disks"] ||= {}
+           settings["disks"]["persistent"] ||= {}
+           settings["disks"]["persistent"].delete(disk_id)
+          end
+
+          logger.info("Detached `#{disk_id}' from `#{instance_id}'")
+        else
+          @logger.info("Disk `#{volume.id}' is not attached to server `#{server.id}'. Skipping.")
         end
-
-        detachment = @qingcloudsdk.detach_volumes([disk_id],instance_id)
-
-        update_agent_settings(instance_id) do |settings|
-         settings["disks"] ||= {}
-         settings["disks"]["persistent"] ||= {}
-         settings["disks"]["persistent"].delete(disk_id)
-        end
-
-        #detach_ebs_volume(instance, volume)
-
-        logger.info("Detached `#{disk_id}' from `#{instance_id}'")
-        print detachment
       end
     end
 
-    def get_disks(vm_id)
-      with_thread_name("get_disks(#{vm_id})") do
-        ret = @qingcloudsdk.describe_volumes(vm_id)
+    def get_disks(disk_id)
+      with_thread_name("get_disks(#{disk_id})") do
+        ret = @qingcloudsdk.describe_volumes(disk_id)
       end
     end
 

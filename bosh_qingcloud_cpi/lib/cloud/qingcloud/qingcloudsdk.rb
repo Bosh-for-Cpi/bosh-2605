@@ -1,5 +1,3 @@
-require "rubypython"
-
 module Bosh::QingCloud
 
   class QingCloudSDK
@@ -59,12 +57,16 @@ module Bosh::QingCloud
     # Attach one or more volumes to same instance
     # @param volumes : an array including IDs of the volumes you want to attach.
     # @param instance : the ID of instance the volumes will be attached to.
-    def attach_volumes(volumes, instance)
-      return @conn.attach_volumes(volumes, instance)
+    def attach_volumes(volume_id, instance_id)
+      volumes = []
+      volumes << volume_id
+      return @conn.attach_volumes(volumes, instance_id)
     end
 
-    def detach_volumes(volumes, instance)
-      return @conn.detach_volumes(volumes, instance)
+    def detach_volumes(volume_id, instance_id)
+      volumes = []
+      volumes << volume_id    
+      return @conn.detach_volumes(volumes, instance_id)
     end
 
     def describe_images(stemcell_id)
@@ -73,7 +75,7 @@ module Bosh::QingCloud
       ret = @conn.describe_images(images,
                                   os_family = [],
                                   processor_type = [],
-                                  status = [],
+                                  status = ["available"],
                                   visibility = [],
                                   provider = [],
                                   verbose = 0,

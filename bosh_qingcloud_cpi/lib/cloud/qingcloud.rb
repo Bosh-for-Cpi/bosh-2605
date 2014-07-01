@@ -10,6 +10,7 @@ require "set"
 require "tmpdir"
 require "securerandom"
 require "yajl"
+require 'rubypython'
 
 require "common/exec"
 require "common/thread_pool"
