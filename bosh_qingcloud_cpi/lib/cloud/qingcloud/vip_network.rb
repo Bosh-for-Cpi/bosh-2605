@@ -23,7 +23,12 @@ module Bosh::QingCloud
         cloud_error("No IP provided for vip network `#{@name}'")
       end
 
-      @logger.info("Associating instance `#{instance["instance_set"][0]["instance_id"]}' " \
+      if instance_info["instances"] != nil 
+        instance_id = instance_info["instances"][0]
+      elsif instance["instance_set"] != nil
+        instance_id = instance["instance_set"][0]["instance_id"]
+      end
+      @logger.info("Associating instance `#{instance_id}' " \
                    "with elastic IP `#{@ip}'")
       ip_info = qingcloud.describe_eips(nil,@ip)
       if ip_info == nil || ip_info["total_count"] != 1
@@ -36,7 +41,7 @@ module Bosh::QingCloud
       # API call will fail in that case.
       
       vip_id = ip_info["eip_set"][0]["eip_id"]
-      ret = qingcloud.associate_eip(vip_id, instance["instance_set"][0]["instance_id"])
+      ret = qingcloud.associate_eip(vip_id, instance_id)
       cloud_error("associate eip for vip network is fail. ret_info = `#{ret}'") if ret["ret_code"] != 0
 
     end
