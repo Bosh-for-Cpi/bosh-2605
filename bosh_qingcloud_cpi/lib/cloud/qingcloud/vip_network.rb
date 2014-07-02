@@ -23,8 +23,8 @@ module Bosh::QingCloud
         cloud_error("No IP provided for vip network `#{@name}'")
       end
 
-      if instance_info["instances"] != nil 
-        instance_id = instance_info["instances"][0]
+      if instance["instances"] != nil 
+        instance_id = instance["instances"][0]
       elsif instance["instance_set"] != nil
         instance_id = instance["instance_set"][0]["instance_id"]
       end
