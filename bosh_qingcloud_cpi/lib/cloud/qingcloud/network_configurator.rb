@@ -72,9 +72,14 @@ module Bosh::QingCloud
       else
         # If there is no vip network we should disassociate any elastic IP
         # currently held by instance (as it might have had elastic IP before)
+        if instance["total_count"] == 1
+          if instance["instance_set"][0]["eip"] != nil &&  !(instance["instance_set"][0]["eip"].empty?)
+            @ip = instance["instance_set"][0]["eip"]["eip_id"]
+          end
+        end
         if @ip
           @logger.info("Disassociating elastic IP `#{@ip}' " \
-                       "from instance `#{instance["instances"][0]}'")
+                       "from instance `#{instance["instance_set"][0]}'")
           qingcloud.dissociate_eips(@ip)
         end
       end
