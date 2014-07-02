@@ -165,7 +165,9 @@ module Bosh::QingCloud
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
         logger.info("Deleting instance '#{instance_id}'")
-        ret = @qingcloudsdk.terminate_instances(instance_id)
+        @qingcloudsdk.terminate_instances(instance_id)
+        wait_resource(instance_id, "terminated", method(:get_vm_status))
+        @registry.delete_settings(instance_id)
       end
     end
 
@@ -289,6 +291,8 @@ module Bosh::QingCloud
         if disk_instance_id == instance_id
           detachment = @qingcloudsdk.detach_volumes(disk_id, instance_id)
 
+          wait_resource(disk_id, "available", method(:get_disk_status))
+
           update_agent_settings(instance_id) do |settings|
            settings["disks"] ||= {}
            settings["disks"]["persistent"] ||= {}
@@ -379,15 +383,23 @@ module Bosh::QingCloud
       with_thread_name("configure_networks(#{instance_id}, ...)") do
         logger.info("Configuring '#{instance_id}' to use new network settings: #{network_spec.pretty_inspect}")
 
-        instance = @ec2.instances[instance_id]
+        # instance = @ec2.instances[instance_id]
+
+        instance_info = @qingcloudsdk.describe_instances(instance_id)
+
+        if instance_info == nil || instance_info["total_count"] == 0
+          cloud_error("Can not find the Instance")
+        end
 
         network_configurator = NetworkConfigurator.new(network_spec)
 
-        compare_security_groups(instance, network_spec)
+        # compare_security_groups(instance, network_spec)
 
-        compare_private_ip_addresses(instance, network_configurator.private_ip)
+        # compare_private_ip_addresses(instance, network_configurator.private_ip)
 
-        network_configurator.configure(@ec2, instance)
+        # network_configurator.configure(@ec2, instance)
+
+        network_configurator.configure(@qingcloudsdk, instance_info)
 
         update_agent_settings(instance_id) do |settings|
           settings["networks"] = network_spec

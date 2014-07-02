@@ -50,6 +50,17 @@ module Bosh::QingCloud
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
+    def describe_volumes_by_instance_id(instance_id)
+      ret = @conn.describe_volumes(volumes = [],
+                                    instance_id,
+                                    status = ["in-use"],
+                                    search_word = [],
+                                    verbose = 0,
+                                    offset = 0,
+                                    limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+    end
+
     def create_volumes(size, volume_name, count)
       return @conn.create_volumes(size, volume_name, count)
     end
@@ -203,7 +214,7 @@ module Bosh::QingCloud
     def describe_eips(instance_id,ip)
       search_word = (ip == nil) ? [] : ip
       instances = (instance_id == nil) ? [] : instance_id
-      ret = @conn.describe_eips(eips,
+      ret = @conn.describe_eips(eips = [],
                                 status = [],
                                 instances,
                                 search_word,
