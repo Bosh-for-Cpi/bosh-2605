@@ -199,6 +199,19 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
+
+    def describe_eips(instance_id,ip)
+      search_word = (ip == nil) ? [] : ip
+      instances = (instance_id == nil) ? [] : instance_id
+      ret = @conn.describe_eips(eips,
+                                status = [],
+                                instances,
+                                search_word,
+                                offset = 0,
+                                limit = 0)                        
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
     
     def associate_eip(eip, instance_id)
       ret = @conn.associate_eip(eip,
