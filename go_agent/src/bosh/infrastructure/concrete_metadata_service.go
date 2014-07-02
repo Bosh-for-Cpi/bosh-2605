@@ -78,10 +78,22 @@ func (ms concreteMetadataService) GetServerName() (string, error) {
 	// if err != nil {
 	// 	return "", bosherr.WrapError(err, "Getting user data")
 	// }
-    
+
 	// serverName := userData.Server.Name
 
-	serverName, _ := os.Hostname()
+	serverName := ""
+	if _, err := os.Stat("/var/vcap/bosh/ServerName.conf"); err == nil {
+		buff, err := ioutil.ReadFile("/var/vcap/bosh/ServerName.conf")
+		if err != nil {
+			fmt.Println("Read file ServerName.conf failed!")
+			return "", bosherr.New("Read file ServerName.conf failed! Empty server name")
+		}
+		serverName = string(buff)
+		fmt.Println("Read file success! ServerName = %s", serverName)
+	} else {
+		serverName, _ = os.Hostname()
+	}
+
 	if len(serverName) == 0 {
 		return "", bosherr.New("Empty server name")
 	}

@@ -2,7 +2,8 @@ package bootstrap
 
 import (
 	"errors"
-
+	"os"
+	"fmt"
 	bosherr "bosh/errors"
 	boshinf "bosh/infrastructure"
 	boshlog "bosh/logger"
@@ -70,6 +71,15 @@ func (boot bootstrap) Run() (settingsService boshsettings.Service, err error) {
 	if err != nil {
 		err = bosherr.WrapError(err, "Settings user password")
 		return
+	}
+
+	if _, err := os.Stat("/var/vcap/bosh/ServerName.conf"); err != nil || os.IsExist(err){
+		fmt.Println("Create ServerName.conf....")
+		fd,_:=os.OpenFile("/var/vcap/bosh/ServerName.conf",os.O_RDWR|os.O_CREATE,0644)
+		hostname, _ := os.Hostname()
+		fd.Write([]byte(hostname))
+		fd.Close()
+		fmt.Println("Create ServerName.conf Success! ServerName = %s", hostname)
 	}
 
 	err = boot.platform.SetupHostname(settings.AgentID)
