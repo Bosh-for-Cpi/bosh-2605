@@ -204,7 +204,7 @@ module Bosh::QingCloud
         volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, 1)
         volume_info = RubyPython::Conversion.ptorDict(volume.pObject.pointer)
 
-        logger.info("Creating volume '#{volume["volumes"]}'")
+        logger.info("Creating volume '#{volume_info["volumes"]}'")
         wait_resource(volume_info["volumes"][0], "available", method(:get_disk_status))
         volume_info["volumes"][0]
       end
