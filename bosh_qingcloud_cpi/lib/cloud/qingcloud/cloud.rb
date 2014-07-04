@@ -252,8 +252,9 @@ module Bosh::QingCloud
 
         ret_info = get_disks(disk_id)
         cloud_error("Volume `#{disk_id}' not found") if ret_info["total_count"] == 0
-
-        device_name=  ret_info["volume_set"][0]["volume_name"]
+	
+        disk_name=  ret_info["volume_set"][0]["volume_name"]
+		
         disk_status = ret_info["volume_set"][0]["status"]
         cloud_error('Disk is in use') if disk_status != "available"
 	
@@ -267,12 +268,12 @@ module Bosh::QingCloud
         update_agent_settings(instance_id) do |settings|
           settings["disks"] ||= {}
           settings["disks"]["persistent"] ||= {}
-          settings["disks"]["persistent"][disk_id] = device_name
+          settings["disks"]["persistent"][disk_id] = "/dev/sdc" #disk_name
         end
 
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
 
-        device_name
+        disk_name
       end
     end
 
@@ -301,7 +302,7 @@ module Bosh::QingCloud
 
           logger.info("Detached `#{disk_id}' from `#{instance_id}'")
         else
-          @logger.info("Disk `#{instance_id}' is not attached to server `#{disk_id}'. Skipping.")
+          @logger.info("Disk `#{disk_id}' is not attached to server `#{instance_id}'. Skipping.")
         end
       end
     end
