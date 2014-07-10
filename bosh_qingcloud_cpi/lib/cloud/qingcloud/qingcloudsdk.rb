@@ -238,5 +238,31 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
+
+    def describe_vxnets(network_id)
+      vxnets = []
+      vxnets << network_id
+      ret = @conn.describe_vxnets(vxnets,
+                                  search_word = [],
+                                  verbose = 0,
+                                  limit = 0,
+                                  offset = 0)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info     
+    end
+
+    def add_router_statics(router,statics)
+      ret = @conn.add_router_statics(router,
+                                     statics)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
+    def update_routers(router)
+      routers = []
+      routers << router
+      ret = @conn.update_routers(routers)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
   end
 end

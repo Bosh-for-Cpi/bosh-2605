@@ -124,8 +124,10 @@ module Bosh::QingCloud
         cloud_error("Key-pair `#{keyname}' not found") if keypair["total_count"] != 1
         @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
 
+        net_id = network_spec["default"]["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network_spec["default"]["cloud_properties"]["net_id"]
+        
         instance_info = @qingcloudsdk.run_instances(stemcell_id, server_name, 
-        resource_pool['instance_type'], "vxnet-0", security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
+        resource_pool['instance_type'], net_id, security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
 
         cloud_error("run_instances is failed, #{instance_info["message"]}") if instance_info["ret_code"] != 0
         @logger.info("Creating new server `#{server_name}'...")
