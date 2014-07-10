@@ -264,5 +264,19 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
+
+    def describe_routers(router)
+      routers = []
+      routers << router
+      ret = @conn.describe_routers(routers,
+                                   vxnet = [],
+                                   status = ["active"],
+                                   verbose = 0,
+                                   search_word = [],
+                                   limit = 0,
+                                   offset = 0)
+      ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+      ret_info
+    end
   end
 end

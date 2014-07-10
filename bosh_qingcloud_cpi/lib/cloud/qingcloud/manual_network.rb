@@ -42,6 +42,20 @@ module Bosh::QingCloud
       cloud_error("add router statics for manual network is fail. ret_info = `#{ret}'") if ret["ret_code"] != 0
       ret = qingcloud.update_routers(router_id)
       cloud_error("update statics for manual network is fail. ret_info = `#{ret}'") if ret["ret_code"] != 0
+      
+
+      $current = 0
+      $total_num = 5
+      begin
+         ret = qingcloud.describe_routers(router_id)
+         if ret["total_count"] == 1
+           $current = $total_num
+         else
+           sleep(2)
+           $current +=1;
+         end
+      end while $current < $total_num
+      
       qingcloud.restart_instances(instance_id)
     end
   end
