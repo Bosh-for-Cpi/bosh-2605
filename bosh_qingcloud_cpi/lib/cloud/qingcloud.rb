@@ -23,19 +23,13 @@ require "cloud/qingcloud/helpers"
 require "cloud/qingcloud/cloud"
 require "cloud/qingcloud/version"
 
-require "cloud/qingcloud/qingcloudsdk"
-require "cloud/qingcloud/aki_picker"
 require "cloud/qingcloud/network_configurator"
 require "cloud/qingcloud/network"
-require "cloud/qingcloud/stemcell"
-require "cloud/qingcloud/stemcell_creator"
 require "cloud/qingcloud/dynamic_network"
 require "cloud/qingcloud/manual_network"
 require "cloud/qingcloud/vip_network"
-require "cloud/qingcloud/instance_manager"
 require "cloud/qingcloud/tag_manager"
-require "cloud/qingcloud/availability_zone_selector"
-# require "cloud/qingcloud/resource_wait"
+require "cloud/qingcloud/qingcloudsdk"
 
 module Bosh
   module Clouds

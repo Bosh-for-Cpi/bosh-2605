@@ -1,6 +1,4 @@
 # Copyright (c) 2009-2013 VMware, Inc.
-require "rubypython"
-
 module Bosh::Registry
 
   class InstanceManager

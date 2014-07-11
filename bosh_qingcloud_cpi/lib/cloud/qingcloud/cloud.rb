@@ -1,5 +1,4 @@
 # Copyright (c) 2009-2012 VMware, Inc.
-require 'cloud/qingcloud/stemcell_finder'
 
 module Bosh::QingCloud
 
@@ -32,7 +31,6 @@ module Bosh::QingCloud
       initialize_registry
 
       @metadata_lock = Mutex.new
-      print "initialize Finish!!\r\n"
     end
 
     ##
@@ -94,18 +92,21 @@ module Bosh::QingCloud
 
         @logger.info('Creating new server...')
         server_name = "vm-#{generate_unique_name}"
+
         network_configurator = NetworkConfigurator.new(network_spec)
-
-        #get security groups
-        qingcloud_security_groups = @qingcloudsdk.describe_security_groups()
-        security_groups = network_configurator.security_groups(@default_security_groups)
-        print "security_groups = #{security_groups}\r\n"
-        #check security_group
-
-        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")
-        
         nics = network_configurator.nics
         @logger.debug("Using NICs: `#{nics.join(', ')}'")
+
+        security_groups_info = @qingcloudsdk.describe_security_groups() 
+        qingcloud_security_groups = []
+        security_groups_info["security_group_set"].each do |sg|
+          qingcloud_security_groups << sg["security_group_id"]
+        end
+
+        security_groups = network_configurator.security_groups(@default_security_groups) 
+        security_groups.each do |sg|
+          cloud_error("Security group `#{sg}' not found") unless qingcloud_security_groups.include?(sg)
+        end
         
         #check image 
         image = @qingcloudsdk.describe_images(stemcell_id)
@@ -114,9 +115,10 @@ module Bosh::QingCloud
         @logger.debug("Using image: `#{stemcell_id}'")
 
         #check instance type
+        instance_type = resource_pool['instance_type']
+        instance_types = @qingcloudsdk.find_instance_types(qingcloud_region)
+        cloud_error("instance_type `#{instance_type}' not found") unless instance_types.include?(instance_type)
 
-        @logger.debug("Using flavor: `#{resource_pool['instance_type']}'")
-        
         #check keypair
         keyname = resource_pool['key_name'] || @default_key_name
         keypair = @qingcloudsdk.describe_key_pairs(keyname)
@@ -124,16 +126,28 @@ module Bosh::QingCloud
         cloud_error("Key-pair `#{keyname}' not found") if keypair["total_count"] != 1
         @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
 
-        net_id = network_spec["default"]["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network_spec["default"]["cloud_properties"]["net_id"]
-        
-        instance_info = @qingcloudsdk.run_instances(stemcell_id, server_name, 
-        resource_pool['instance_type'], net_id, security_groups[0], 'keypair', keypair["keypair_set"][0]["keypair_id"])
+        net_id = "vxnet-0"
+        network_spec.each_pair do |name, network|
+           net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
+        end
 
-        cloud_error("run_instances is failed, #{instance_info["message"]}") if instance_info["ret_code"] != 0
+        server_params = {
+            :instance_name => server_name,
+            :image_id => stemcell_id,
+            :instance_type => instance_type,
+            :login_mode  => "keypair",
+            :login_keypair => keyname,
+            :vxnets => net_id,
+            :security_group => security_groups[0]
+        }
+
+        server = @qingcloudsdk.run_instances(server_params)
+
+        cloud_error("run_instances is failed, #{server["message"]}") if server["ret_code"] != 0
         @logger.info("Creating new server `#{server_name}'...")
 
         begin
-          wait_resource(instance_info["instances"][0], "running", method(:get_vm_status))
+          wait_resource(server["instances"][0], "running", method(:get_vm_status))
         rescue Bosh::Clouds::CloudError => e
           @logger.warn("Failed to create server: #{e.message}")
           @qingcloudsdk.terminate_instances(instance_info["instances"][0])
@@ -141,23 +155,15 @@ module Bosh::QingCloud
         end
 
         #associate floationg ip
-        @logger.info("Configuring network for server `#{instance_info["instances"][0]}'...")
-        network_configurator.configure(@qingcloudsdk, instance_info)
+        @logger.info("Configuring network for server `#{server["instances"][0]}'...")
+        network_configurator.configure(@qingcloudsdk, server)
 
-        @logger.info("Updating settings for server `#{instance_info["instances"][0]}'...")
+        @logger.info("Updating settings for server `#{server["instances"][0]}'...")
         settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
-                                          flavor_has_ephemeral_disk?(resource_pool['instance_type']))
-        @registry.update_settings(instance_info["instances"][0], settings)
-        instance_info["instances"][0]
+                                          flavor_has_ephemeral_disk?(instance_type))
+        @registry.update_settings(server["instances"][0], settings)
+        server["instances"][0]
       end
-    end
-
-    def default_ec2_endpoint
-      ['ec2', aws_region, 'amazonaws.com'].compact.join('.')
-    end
-
-    def default_elb_endpoint
-      ['elasticloadbalancing', aws_region, 'amazonaws.com'].compact.join('.')
     end
 
     ##
@@ -167,9 +173,17 @@ module Bosh::QingCloud
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
         logger.info("Deleting instance '#{instance_id}'")
-        @qingcloudsdk.terminate_instances(instance_id)
-        wait_resource(instance_id, "terminated", method(:get_vm_status))
-        @registry.delete_settings(instance_id)
+
+        instance_info = @qingcloudsdk.describe_exist_instances(instance_id)
+        if instance_info["total_count"] != 0 
+          @qingcloudsdk.terminate_instances(instance_id)
+          wait_resource(instance_id, "terminated", method(:get_vm_status))
+
+          @logger.info("Deleting settings for server `#{instance_id}'...")
+          @registry.delete_settings(instance_id)
+        else
+          @logger.info("Server `#{instance_id}' not found. Skipping.")
+        end
       end
     end
 
@@ -178,7 +192,12 @@ module Bosh::QingCloud
     # @param [String] instance_id Qing instance id
     def reboot_vm(instance_id)
       with_thread_name("reboot_vm(#{instance_id})") do
+        instance_info = @qingcloudsdk.describe_exist_instances(instance_id)
+        cloud_error("Server `#{instance_id}' not found") if instance_info["total_count"] == 0
+
+        @logger.info("Restart server `#{instance_id}'...")
         ret = @qingcloudsdk.restart_instances(instance_id)
+        wait_resource(instance_id, "running", method(:get_vm_status))
       end
     end
 
@@ -198,15 +217,19 @@ module Bosh::QingCloud
     # @param [optional, String] volume name
     # @param [optional, Integer] volume count
     # @return [String] created  volume id
-    def create_disk(size, volume_name = nil)
-      with_thread_name("create_disk(#{size}, #{volume_name})") do
+    def create_disk(size, server_id = nil)
+      with_thread_name("create_disk(#{size}, #{server_id})") do
         validate_disk_size(size)
 
-        # if the disk is created for an instance, use the same availability zone as they must match
-        volume = @qingcloudsdk.create_volumes(size / 1024 , volume_name, 1)
-        volume_info = RubyPython::Conversion.ptorDict(volume.pObject.pointer)
+        volume_params = {
+          :size => (size / 1024.0).ceil,
+          :name => "volume-#{generate_unique_name}",
+          :count => 1          
+        }
 
-        logger.info("Creating volume '#{volume_info["volumes"]}'")
+        logger.info("Creating new volume '#{volume_params[:name]}'")
+        volume_info = @qingcloudsdk.create_volumes(volume_params)
+
         wait_resource(volume_info["volumes"][0], "available", method(:get_disk_status))
         volume_info["volumes"][0]
       end
@@ -228,9 +251,9 @@ module Bosh::QingCloud
       with_thread_name("delete_disk(#{disk_id})") do
         @logger.info("Deleting volume `#{disk_id}'...")
         volume_info = @qingcloudsdk.describe_volumes(disk_id)
-        if volume_info["total_count"] == 1
+        state = volume_info["volume_set"][0]["status"]
+        if volume_info["total_count"] != 0  && ![:deleted, :ceased].include?(state)
 
-          state = volume_info["volume_set"][0]["status"]
           if  state != "available"
             cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
           end
@@ -254,12 +277,11 @@ module Bosh::QingCloud
 
         ret_info = get_disks(disk_id)
         cloud_error("Volume `#{disk_id}' not found") if ret_info["total_count"] == 0
-	
+
         disk_name=  ret_info["volume_set"][0]["volume_name"]
-		
         disk_status = ret_info["volume_set"][0]["status"]
         cloud_error('Disk is in use') if disk_status != "available"
-	
+
         # need to judge if server has attach to a disk
         #cloud_error('Server has too many disks attached')
 
@@ -336,14 +358,19 @@ module Bosh::QingCloud
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
     # @return [String] snapshot id
-    def snapshot_disk(resources, snapshot_name)
-      with_thread_name("snapshot_disk(#{resources})") do
-
-        ret = @qingcloudsdk.create_snapshots(resources, snapshot_name)
+    def snapshot_disk(disk_id, metadata)
+      with_thread_name("snapshot_disk(#{disk_id})") do
         
+        volume_info = @qingcloudsdk.describe_available_volumes(disk_id)
+        cloud_error("Volume `#{disk_id}' not found") if volume_info["total_count"] == 0
+
+        snapshot_name = "snapshot-#{generate_unique_name}"
+        @logger.info("Creating new snapshot for volume `#{disk_id}'...")
+        ret = @qingcloudsdk.create_snapshots(disk_id, snapshot_name)
+
+        @logger.info("Creating new snapshot `#{snapshot_name}' for volume `#{disk_id}'...")        
         wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
         
-        logger.info("snapshot '#{snapshot_name}' of volume '#{resources}' created")
         ret["snapshots"][0]
       end
     end
@@ -352,21 +379,18 @@ module Bosh::QingCloud
     # @param [String] snapshot_id snapshot id to delete
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        snapshot_info = @qingcloudsdk.describe_snapshot(snapshot_id)
+        @logger.info("Deleting snapshot `#{snapshot_id}'...")
+        snapshot_info = @qingcloudsdk.describe_available_snapshot(snapshot_id)
         
         if snapshot_info["total_count"] == 1
-          status = snapshot_info["snapshot_set"][0]["status"]
-          
 
-          if status == "available"
             ret = @qingcloudsdk.delete_snapshots(snapshot_id)
             snapshot_after_delete = @qingcloudsdk.describe_snapshot(snapshot_id)
-  
+
             wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
 
-          else
+        else
           logger.info("snapshot `#{snapshot_id}' not found. Skipping.")
-          end 
         end
       end
     end
@@ -553,21 +577,12 @@ module Bosh::QingCloud
           #max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
           logger:             qingcloud_logger
       }
+
       @default_key_name = qingcloud_properties["default_key_name"]
       @default_security_groups = qingcloud_properties["default_security_groups"]
       @wait_resource_poll_interval = qingcloud_properties["wait_resource_poll_interval"] || 5
       @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
-      #aws_params[:proxy_uri] = aws_properties['proxy_uri'] if aws_properties['proxy_uri']
 
-      # AWS Ruby SDK is threadsafe but Ruby autoload isn't,
-      # so we need to trigger eager autoload while constructing CPI
-      #AWS.eager_autoload!
-
-      #AWS.config(aws_params)
-
-      #@ec2 = AWS::EC2.new
-      #@region = @ec2.regions[aws_region]
-      #@az_selector = AvailabilityZoneSelector.new(@region, aws_properties['default_availability_zone'])
     end
 
     def initialize_registry
@@ -592,28 +607,6 @@ module Bosh::QingCloud
       settings = registry.read_settings(instance_id)
       yield settings
       registry.update_settings(instance_id, settings)
-    end
-
-    def attach_ebs_volume(instance, volume)
-      device_name = select_device_name(instance)
-      cloud_error('Instance has too many disks attached') unless device_name
-
-      # Work around AWS eventual (in)consistency:
-      # even tough we don't call attach_disk until the disk is ready,
-      # AWS might still lie and say that the disk isn't ready yet, so
-      # we try again just to be really sure it is telling the truth
-      attachment = nil
-      Bosh::Common.retryable(tries: 15, on: AWS::EC2::Errors::IncorrectState) do
-        attachment = volume.attach_to(instance, device_name)
-      end
-
-      logger.info("Attaching '#{volume.id}' to '#{instance.id}' as '#{device_name}'")
-      ResourceWait.for_attachment(attachment: attachment, state: :attached)
-
-      device_name = attachment.device
-      logger.info("Attached '#{volume.id}' to '#{instance.id}' as '#{device_name}'")
-
-      device_name
     end
 
     def select_device_name(instance)

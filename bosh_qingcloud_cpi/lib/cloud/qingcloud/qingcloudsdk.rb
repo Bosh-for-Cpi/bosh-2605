@@ -25,6 +25,20 @@ module Bosh::QingCloud
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
+    def describe_exist_instances(instance_id)
+      instances = []
+      instances << instance_id 
+      ret = @conn.describe_instances(instances,
+                                      image_id = [],
+                                      instance_type = [],
+                                      status = ["pending", "running", "stopped", "suspended"],
+                                      search_word = [],
+                                      verbose = 0,
+                                      offset = 0,
+                                      limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+    end
+
     def terminate_instances(instance_id)
       instances = []
       instances << instance_id 
@@ -50,6 +64,19 @@ module Bosh::QingCloud
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
+    def describe_available_volumes(volume_id)
+      volumes = []
+      volumes << volume_id
+      ret = @conn.describe_volumes(volumes,
+                                    instance_id = [],
+                                    status = ["available"],
+                                    search_word = [],
+                                    verbose = 0,
+                                    offset = 0,
+                                    limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+    end
+
     def describe_volumes_by_instance_id(instance_id)
       ret = @conn.describe_volumes(volumes = [],
                                     instance_id,
@@ -61,8 +88,12 @@ module Bosh::QingCloud
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
-    def create_volumes(size, volume_name, count)
-      return @conn.create_volumes(size, volume_name, count)
+    def create_volumes(volume_params)
+      size = volume_params[:size]
+      volume_name = volume_params[:name]
+      count = volume_params[:count]
+      ret = @conn.create_volumes(size, volume_name, count)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
 
     # Attach one or more volumes to same instance
@@ -157,7 +188,24 @@ module Bosh::QingCloud
                                       limit = 0)
       return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
     end
-    
+
+    def describe_available_snapshot(snapshot_id)
+      snapshots = []
+      snapshots << snapshot_id
+      status = []
+      status << snapshot_status
+      ret = @conn.describe_snapshots(snapshots,
+                                      resource_id = [],
+                                      snapshot_type = 1,
+                                      root_id = [],
+                                      status = ["available"],
+                                      verbose = 0,
+                                      search_word = [],
+                                      offset = 0,
+                                      limit = 0)
+      return RubyPython::Conversion.ptorDict(ret.pObject.pointer)
+    end
+
     def describe_security_groups()
       ret = @conn.describe_security_groups(security_groups = [],
                                            security_group_name = "",
@@ -179,34 +227,29 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
-    
-    def run_instances(image_id, instance_name, instance_type, vxnet, security_group, login_mode, login_keypair)
-      image = ""
-      image << image_id
-      name = ""
-      name << instance_name
-      type = ""
-      type << instance_type
-      vxnet_id = []
-      vxnet_id << vxnet
-      securityGroup = ""
-      securityGroup << security_group
-      loginMode = ""
-      loginMode << login_mode
-      loginKeypair = ""
-      loginKeypair << login_keypair
-      ret = @conn.run_instances(image,
-                            type,
-                            cpu = nil,
-                            memory = nil,
-                            count = 1,
-                            name,
-                            vxnet_id,
-                            securityGroup,
-                            loginMode,
-                            loginKeypair,
-                            login_passwd = "C1oudc0w",
-                            need_newsid = 0)  
+
+    def run_instances(server_params)
+      image_id = server_params[:image_id]
+      instance_name = server_params[:instance_name]
+      instance_type = server_params[:instance_type]
+      loginMode = server_params[:login_mode]
+      login_keypair = server_params[:login_keypair]
+      vxnets = []
+      vxnets << server_params[:vxnets]
+      security_group = server_params[:security_group]
+
+      ret = @conn.run_instances(image_id,
+                    instance_type,
+                    cpu = nil,
+                    memory = nil,
+                    count = 1,
+                    instance_name,
+                    vxnets,
+                    security_group,
+                    loginMode,
+                    login_keypair,
+                    login_passwd = "C1oudc0w",
+                    need_newsid = 0)
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
@@ -223,7 +266,7 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
-    
+
     def associate_eip(eip, instance_id)
       ret = @conn.associate_eip(eip,
                             instance_id)
@@ -248,7 +291,7 @@ module Bosh::QingCloud
                                   limit = 0,
                                   offset = 0)
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
-      ret_info     
+      ret_info
     end
 
     def add_router_statics(router,statics)
@@ -278,5 +321,14 @@ module Bosh::QingCloud
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
+
+    def find_instance_types(region)
+      instance_types = Hash.new()
+      instance_types["gd1"] = ["c1m1", "c1m2", "c1m4", "c2m2", "c2m4", "c2m8", "c4m4", "c4m4", "c4m16"]
+      instance_types["pek1"] = ["small_b", "small_c", "medium_a", "medium_b", "medium_c", "large_a", "large_b", "large_c"]
+
+      return instance_types[region]
+    end
+
   end
 end
