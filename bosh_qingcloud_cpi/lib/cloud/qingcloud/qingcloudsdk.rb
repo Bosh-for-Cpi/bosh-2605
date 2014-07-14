@@ -237,19 +237,24 @@ module Bosh::QingCloud
       vxnets = []
       vxnets << server_params[:vxnets]
       security_group = server_params[:security_group]
-
+      need_userdata = server_params[:user_data] != nil ? 1 : 0
+      userdata_value = server_params[:user_data]
       ret = @conn.run_instances(image_id,
-                    instance_type,
-                    cpu = nil,
-                    memory = nil,
-                    count = 1,
-                    instance_name,
-                    vxnets,
-                    security_group,
-                    loginMode,
-                    login_keypair,
-                    login_passwd = "C1oudc0w",
-                    need_newsid = 0)
+                                instance_type,
+                                cpu = nil,
+                                memory = nil,
+                                count = 1,
+                                instance_name,
+                                vxnets,
+                                security_group,
+                                loginMode,
+                                login_keypair,
+                                login_passwd = "C1oudc0w",
+                                need_newsid = 0,
+                                volumes = [],
+                                need_userdata,
+                                userdata_type = "plain",
+                                userdata_value)
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end
@@ -262,7 +267,7 @@ module Bosh::QingCloud
                                 instances,
                                 search_word,
                                 offset = 0,
-                                limit = 0)                        
+                                limit = 0)
       ret_info = RubyPython::Conversion.ptorDict(ret.pObject.pointer)
       ret_info
     end

@@ -131,14 +131,16 @@ module Bosh::QingCloud
            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
         end
 
+        user_data = Base64.encode64(user_data(server_name, network_spec, "ssh-rsa " + keypair["keypair_set"][0]["pub_key"]).to_json)
         server_params = {
-            :instance_name => server_name,
-            :image_id => stemcell_id,
-            :instance_type => instance_type,
-            :login_mode  => "keypair",
-            :login_keypair => keyname,
-            :vxnets => net_id,
-            :security_group => security_groups[0]
+          :instance_name => server_name,
+          :image_id => stemcell_id,
+          :instance_type => instance_type,
+          :login_mode  => "keypair",
+          :login_keypair => keyname,
+          :vxnets => net_id,
+          :security_group => security_groups[0],
+          :user_data => user_data
         }
 
         server = @qingcloudsdk.run_instances(server_params)
@@ -161,7 +163,8 @@ module Bosh::QingCloud
         @logger.info("Updating settings for server `#{server["instances"][0]}'...")
         settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
                                           flavor_has_ephemeral_disk?(instance_type))
-        @registry.update_settings(server["instances"][0], settings)
+        # @registry.update_settings(server["instances"][0], settings)
+        @registry.update_settings(server_name, settings)
         server["instances"][0]
       end
     end
@@ -179,8 +182,8 @@ module Bosh::QingCloud
           @qingcloudsdk.terminate_instances(instance_id)
           wait_resource(instance_id, "terminated", method(:get_vm_status))
 
-          @logger.info("Deleting settings for server `#{instance_id}'...")
-          @registry.delete_settings(instance_id)
+          @logger.info("Deleting settings for server `#{instance_id}'/`#{instance_info["instance_set"][0]["instance_name"]}'...")
+          @registry.delete_settings(instance_info["instance_set"][0]["instance_name"])
         else
           @logger.info("Server `#{instance_id}' not found. Skipping.")
         end
@@ -282,23 +285,83 @@ module Bosh::QingCloud
         disk_status = ret_info["volume_set"][0]["status"]
         cloud_error('Disk is in use') if disk_status != "available"
 
-        # need to judge if server has attach to a disk
-        #cloud_error('Server has too many disks attached')
-
-        attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
-
-        wait_resource(disk_id, "in-use", method(:get_disk_status))
+        device_name = attach_volume(disk_id, instance_id)
 
         update_agent_settings(instance_id) do |settings|
           settings["disks"] ||= {}
           settings["disks"]["persistent"] ||= {}
-          settings["disks"]["persistent"][disk_id] = "/dev/sdc" #disk_name
+          settings["disks"]["persistent"][disk_id] = device_name
         end
 
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
 
         disk_name
       end
+    end
+
+
+    ##
+    # Attaches an QingCloud volume to an OpenStack server
+    #
+    # @param disk id
+    # @param instance id
+    # @return [String] Device name
+    def attach_volume(disk_id, instance_id)
+      @logger.info("Attaching volume `#{disk_id}' to server `#{instance_id}'...")
+      volume_info = @qingcloudsdk.describe_volumes(disk_id)
+      volume_id = volume_info["volume_set"][0]["volume_id"]
+
+      if volume_info["volume_set"][0]["status"] != "available"
+        instance_disk_id = volume_info["volume_set"][0]["instance"]["instance_id"]
+        cloud_error("Instance `#{instance_id}' is not attach to #{disk_id}") unless instance_disk_id == instance_id
+      end
+
+      devices_name = []
+      update_agent_settings(instance_id) do |settings|
+        if settings["disks"] != nil && settings["disks"]["persistent"] != nil
+          settings["disks"]["persistent"].each_pair do |id, name|
+            devices_name << name
+          end
+        end
+      end
+
+      if devices_name.empty?
+        first_device_name_letter = "#{FIRST_DEVICE_NAME_LETTER}"
+        device_name = select_device_name(devices_name, first_device_name_letter)
+        attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
+        wait_resource(disk_id, "in-use", method(:get_disk_status))
+      else
+
+        update_agent_settings(instance_id) do |settings|
+          if settings["disks"] != nil && settings["disks"]["persistent"] != nil
+            settings["disks"]["persistent"].each_pair do |id, name|
+              device_name = name if id == volume_id
+            end
+          end
+        end
+
+        @logger.info("Volume `#{disk_id}' is already attached to server `#{instance_id}' in `#{device_name}'. Skipping.")
+      end
+
+      device_name
+    end
+
+    ##
+    # Select the first available device name
+    #
+    # @param [Array] volume_attachments Volume attachments
+    # @param [String] first_device_name_letter First available letter for device names
+    # @return [String] First available device name or nil is none is available
+    def select_device_name(devices, first_device_name_letter)
+      (first_device_name_letter..'z').each do |char|
+        # Some kernels remap device names (from sd* to vd* or xvd*).
+        device_name = "/dev/sd#{char}"
+        # Bosh Agent will lookup for the proper device name if we set it initially to sd*.
+        return device_name unless  !devices.empty? && devices.include(device_name)
+        @logger.warn("`/dev/sd#{char}' is already taken")
+      end
+
+      nil
     end
 
     # Detach an EBS volume from an EC2 instance
@@ -604,42 +667,49 @@ module Bosh::QingCloud
         raise ArgumentError, "block is not provided"
       end
 
-      settings = registry.read_settings(instance_id)
-      yield settings
-      registry.update_settings(instance_id, settings)
+      instance_info = @qingcloudsdk.describe_instances(instance_id)
+      if instance_info["total_count"] != 0 
+        # settings = registry.read_settings(instance_id)
+        settings = registry.read_settings(instance_info["instance_set"][0]["instance_name"])
+        yield settings
+        registry.update_settings(instance_info["instance_set"][0]["instance_name"], settings)
+      else
+        @logger.info("Server `#{instance_id}' not found. Skipping.")
+      end
     end
 
-    def select_device_name(instance)
-      device_names = Set.new(instance.block_device_mappings.to_hash.keys)
+    ##
+    # Prepare server user data
+    #
+    # @param [String] server_name server name
+    # @param [Hash] network_spec network specification
+    # @return [Hash] server user data
+    def user_data(server_name, network_spec, public_key = nil)
+      data = {}
 
-      ('f'..'p').each do |char| # f..p is what console suggests
-                                # Some kernels will remap sdX to xvdX, so agent needs
-                                # to lookup both (sd, then xvd)
-        device_name = "/dev/sd#{char}"
-        return device_name unless device_names.include?(device_name)
-        logger.warn("'#{device_name}' on '#{instance.id}' is taken")
+      data['registry'] = { 'endpoint' => @registry.endpoint }
+      data['server'] = { 'name' => server_name }
+      data['openssh'] = { 'public_key' => public_key } if public_key
+
+      with_dns(network_spec) do |servers|
+        data['dns'] = { 'nameserver' => servers }
       end
 
-      nil
+      data
     end
 
-    def detach_ebs_volume(instance, volume, force=false)
-      mappings = instance.block_device_mappings.to_hash
-
-      device_map = mappings.inject({}) do |hash, (device_name, attachment)|
-        hash[attachment.volume.id] = device_name
-        hash
+    ##
+    # Extract dns server list from network spec and yield the the list
+    #
+    # @param [Hash] network_spec network specification for instance
+    # @yield [Array]
+    def with_dns(network_spec)
+      network_spec.each_value do |properties|
+        if properties.has_key?('dns') && !properties['dns'].nil?
+          yield properties['dns']
+          return
+        end
       end
-
-      if device_map[volume.id].nil?
-        raise Bosh::Clouds::DiskNotAttached.new(true),
-              "Disk `#{volume.id}' is not attached to instance `#{instance.id}'"
-      end
-
-      attachment = volume.detach_from(instance, device_map[volume.id], force: force)
-      logger.info("Detaching `#{volume.id}' from `#{instance.id}'")
-
-      ResourceWait.for_attachment(attachment: attachment, state: :detached)
     end
 
     ##
@@ -668,7 +738,7 @@ module Bosh::QingCloud
     ##
     # Checks if the QingCloud instance type has ephemeral disk
     #
-    # @param [Fog::Compute::OpenStack::Flavor] OpenStack flavor
+    # @param  flavor
     # @return [Boolean] true if flavor has ephemeral disk, false otherwise
     def flavor_has_ephemeral_disk?(flavor)
     # flavor.ephemeral.nil? || flavor.ephemeral.to_i <= 0 ? false : true
