@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 
 	bosherr "bosh/errors"
 )
+const userDataPath = "/var/vcap/bosh/user_data.json"
 
 type concreteMetadataService struct {
 	metadataHost string
@@ -44,7 +44,7 @@ func (ms concreteMetadataService) GetPublicKey() (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		// return "", bosherr.WrapError(err, "Getting open ssh key")
-		userdata, err := ioutil.ReadFile("/etc/qingcloud/userdata/userdata.string")
+		userdata, err := ioutil.ReadFile(userDataPath)
 		if err != nil {
 			fmt.Println("Read file userdata failed!")
 			return "", bosherr.New("Read file userdata failed!")
@@ -138,7 +138,7 @@ func (ms concreteMetadataService) getUserData() (userDataType, error) {
 	userDataResp, err := http.Get(userDataURL)
 	if err != nil {
 		// return userData, bosherr.WrapError(err, "Getting user data from url")
-		userdata_buff, err := ioutil.ReadFile("/etc/qingcloud/userdata/userdata.string")
+		userdata_buff, err := ioutil.ReadFile(userDataPath)
 		if err != nil {
 			fmt.Println("Read file userdata failed!")
 			return userData, bosherr.New("Read file userdata failed!")
