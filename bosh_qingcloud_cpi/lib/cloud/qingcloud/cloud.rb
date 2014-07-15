@@ -326,8 +326,7 @@ module Bosh::QingCloud
       end
 
       if devices_name.empty?
-        first_device_name_letter = "#{FIRST_DEVICE_NAME_LETTER}"
-        device_name = select_device_name(devices_name, first_device_name_letter)
+        device_name = select_device_name(devices_name)
         attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
         wait_resource(disk_id, "in-use", method(:get_disk_status))
       else
@@ -352,8 +351,8 @@ module Bosh::QingCloud
     # @param [Array] volume_attachments Volume attachments
     # @param [String] first_device_name_letter First available letter for device names
     # @return [String] First available device name or nil is none is available
-    def select_device_name(devices, first_device_name_letter)
-      (first_device_name_letter..'z').each do |char|
+    def select_device_name(devices)
+      ('c'..'z').each do |char|
         # Some kernels remap device names (from sd* to vd* or xvd*).
         device_name = "/dev/sd#{char}"
         # Bosh Agent will lookup for the proper device name if we set it initially to sd*.
