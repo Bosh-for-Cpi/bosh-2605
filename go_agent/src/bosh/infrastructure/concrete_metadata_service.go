@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"io/ioutil"
 	"net/http"
 	"net/url"
