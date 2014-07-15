@@ -10,7 +10,6 @@ module Bosh::QingCloud
     METADATA_TIMEOUT    = 5 # in seconds
     DEVICE_POLL_TIMEOUT = 60 # in seconds
 
-    attr_reader   :ec2
     attr_reader   :registry
     attr_reader   :options
     attr_accessor :logger
