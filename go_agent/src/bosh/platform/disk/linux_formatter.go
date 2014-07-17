@@ -80,3 +80,31 @@ func (f linuxFormatter) partitionGetUUID(partitionPath string) (string, error) {
 
 	return result[1], nil
 }
+
+func (f linuxFormatter) ChangeDevicePath(devicePath, mountPoint string) (err error) {
+	content := "ori=`grep " + mountPoint + " /etc/mtab | awk '{print $1}' | cut -c 6-8`"
+
+	results:= strings.Replace(devicePath, "/dev/", "", -1)
+	content = content + " && sed -i \"s/"+ results +"/${ori}/\" " + "/var/vcap/bosh/settings.json"
+
+	_, _, _, err := f.runner.RunCommand("bash", "-c", content)
+	if err != nil {
+		return bosherr.WrapError(err, "ChangeDevicePath change name failed")
+	}
+
+	return nil
+}
+
+func (f linuxFormatter) GetFstabDevicePath() (result string, err error) {
+	//get device name eg:/dev/sdb
+	content := "grep '/var/vcap' /etc/mtab | awk '{print $1}' | cut -c 1-8"
+
+	stdout, _, _, err := f.runner.RunCommand("bash", "-c", content)
+	if err != nil {
+	 	return "", bosherr.WrapError(err, "GetFstabDevicePath get device name failed")
+	}
+
+	stdout = strings.TrimSpace(stdout)
+
+	return stdout, nil
+}

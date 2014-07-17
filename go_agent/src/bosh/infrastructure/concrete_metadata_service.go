@@ -10,6 +10,7 @@ import (
 
 	bosherr "bosh/errors"
 )
+
 const userDataPath = "/var/vcap/bosh/user_data.json"
 
 type concreteMetadataService struct {
@@ -116,8 +117,6 @@ func (ms concreteMetadataService) GetRegistryEndpoint() (string, error) {
 	endpoint := userData.Registry.Endpoint
 	nameServers := userData.DNS.Nameserver
 
-	// var endpoint = "http://10.60.32.150:25777"
-	// nameServers := []string{"10.60.32.150"}
 
 	if len(nameServers) > 0 {
 		endpoint_new, err := ms.resolveRegistryEndpoint(endpoint, nameServers)

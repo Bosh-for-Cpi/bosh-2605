@@ -529,9 +529,18 @@ func (p linux) MountPersistentDisk(devicePath, mountPoint string) error {
 		return bosherr.WrapError(err, "IsMounted failed")
 	}
 
+
 	if isMounted {
+	/*
+		err := p.diskManager.GetFormatter().ChangeDevicePath(devicePath, mountPoint)
+		if err != nil {
+			fmt.Println("zff ChangeDevicePath err: %s", err)
+			return nil
+		}
+	*/
 		return nil
 	}
+
 	if !p.options.UsePreformattedPersistentDisk {
 		partitions := []boshdisk.Partition{
 			{Type: boshdisk.PartitionTypeLinux},
@@ -567,6 +576,11 @@ func (p linux) MountPersistentDisk(devicePath, mountPoint string) error {
 
 func (p linux) UnmountPersistentDisk(devicePath string) (bool, error) {
 	p.logger.Debug("platform", "Unmounting persistent disk %s", devicePath)
+
+	devicePath, err := p.diskManager.GetFormatter().GetFstabDevicePath()
+	if err != nil {
+		return false, bosherr.WrapError(err, "GetFstabDevicePath is failed")
+	}
 
 	realPath, err := p.devicePathResolver.GetRealDevicePath(devicePath)
 	if err != nil {
