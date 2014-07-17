@@ -130,7 +130,6 @@ module Bosh::QingCloud
           network_type = network_spec["type"] || "manual"
           if network_type == "dymanic"
             net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-          end
           elsif network_type == "manual"
             static_ip = network["ip"]
             network_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
