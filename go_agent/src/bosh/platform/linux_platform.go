@@ -551,7 +551,7 @@ func (p linux) MountPersistentDisk(devicePath, mountPoint string) error {
 
 		realPath = partitionPath
 
-		err = p.diskManager.GetFormatter().WriteFstabs(realPath, mountPoint, boshdisk.FileSystemExt4)
+		err = p.diskManager.GetFormatter().WriteFstabs(realPath, mountPoint)
 		if err != nil {
 			return bosherr.WrapError(err, "Write /etc/fstabs with ext4")
 		}
