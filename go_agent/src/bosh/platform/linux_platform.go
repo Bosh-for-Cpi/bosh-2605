@@ -524,6 +524,14 @@ func (p linux) MountPersistentDisk(devicePath, mountPoint string) error {
 		return bosherr.WrapError(err, "Getting real device path")
 	}
 
+	isMounted, err := p.diskManager.GetMounter().IsMounted(mountPoint)
+	if err != nil {
+		return bosherr.WrapError(err, "IsMounted failed")
+	}
+
+	if isMounted {
+		return nil
+	}
 	if !p.options.UsePreformattedPersistentDisk {
 		partitions := []boshdisk.Partition{
 			{Type: boshdisk.PartitionTypeLinux},
@@ -542,6 +550,11 @@ func (p linux) MountPersistentDisk(devicePath, mountPoint string) error {
 		}
 
 		realPath = partitionPath
+
+		err = p.diskManager.GetFormatter().WriteFstabs(realPath, mountPoint, boshdisk.FileSystemExt4)
+		if err != nil {
+			return bosherr.WrapError(err, "Write /etc/fstabs with ext4")
+		}
 	}
 
 	err = p.diskManager.GetMounter().Mount(realPath, mountPoint)

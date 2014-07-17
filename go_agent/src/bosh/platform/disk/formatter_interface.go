@@ -9,4 +9,5 @@ const (
 
 type Formatter interface {
 	Format(partitionPath string, fsType FileSystemType) (err error)
+	WriteFstabs(partitionPath string, mountPoint string) (err error)
 }

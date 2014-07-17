@@ -43,6 +43,21 @@ func (f linuxFormatter) Format(partitionPath string, fsType FileSystemType) (err
 	return
 }
 
+func (f linuxFormatter) WriteFstabs(partitionPath string, mountPoint string) (err error) {
+	uuid, err := f.partitionGetUUID(partitionPath)
+	if err != nil {
+		err = bosherr.WrapError(err, "Get partition UUID fail")
+	}
+
+	content :=  "sed -i '$a " + uuid + " " + mountPoint + " ext4 defaults 0 2' /etc/fstab "
+
+	_, _, _, err = f.runner.RunCommand("bash","-c", content)
+	if err != nil {
+		err = bosherr.WrapError(err, "exec command sed -i fail")
+	}
+	return
+}
+
 func (f linuxFormatter) partitionHasGivenType(partitionPath string, fsType FileSystemType) bool {
 	stdout, _, _, err := f.runner.RunCommand("blkid", "-p", partitionPath)
 	if err != nil {
@@ -50,4 +65,18 @@ func (f linuxFormatter) partitionHasGivenType(partitionPath string, fsType FileS
 	}
 
 	return strings.Contains(stdout, fmt.Sprintf(` TYPE="%s"`, fsType))
+}
+
+func (f linuxFormatter) partitionGetUUID(partitionPath string) (string, error) {
+	stdout, _, _, err := f.runner.RunCommand("blkid", "-p", partitionPath)
+	if err != nil {
+		return "", bosherr.WrapError(err, "blkid exec error ")
+	}
+
+	fmt.Println("zff partitionGetUUID stdout: %s", stdout)
+	results:= strings.Replace(stdout, "\"", "", -1)
+	fmt.Println("zff partitionGetUUID results: %s", results)
+	result := strings.Fields(results)
+
+	return result[1], nil
 }
