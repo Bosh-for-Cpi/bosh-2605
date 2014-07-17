@@ -73,9 +73,7 @@ func (f linuxFormatter) partitionGetUUID(partitionPath string) (string, error) {
 		return "", bosherr.WrapError(err, "blkid exec error ")
 	}
 
-	fmt.Println("zff partitionGetUUID stdout: %s", stdout)
-	results:= strings.Replace(stdout, "\"", "", -1)
-	fmt.Println("zff partitionGetUUID results: %s", results)
+	results:= strings.Replace(stdout, "\"", "", -1)	
 	result := strings.Fields(results)
 
 	return result[1], nil
@@ -87,7 +85,7 @@ func (f linuxFormatter) ChangeDevicePath(devicePath, mountPoint string) (err err
 	results:= strings.Replace(devicePath, "/dev/", "", -1)
 	content = content + " && sed -i \"s/"+ results +"/${ori}/\" " + "/var/vcap/bosh/settings.json"
 
-	_, _, _, err := f.runner.RunCommand("bash", "-c", content)
+	_, _, _, err = f.runner.RunCommand("bash", "-c", content)
 	if err != nil {
 		return bosherr.WrapError(err, "ChangeDevicePath change name failed")
 	}
