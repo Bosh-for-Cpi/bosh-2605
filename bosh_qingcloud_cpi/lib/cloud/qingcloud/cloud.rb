@@ -127,13 +127,13 @@ module Bosh::QingCloud
 
         net_id = "vxnet-0"
         network_spec.each_pair do |name, network|
-          network_type = network_spec["type"] || "manual"
-          if network_type == "dymanic"
+          network_type = network["type"] || "manual"
+          if network_type == "dynamic"
             net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
           elsif network_type == "manual"
             static_ip = network["ip"]
-            network_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-            net_id = network_id + "|" + static_ip          
+            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
+            net_id = net_id + "|" + static_ip unless static_ip == nil
           end
         end
 
@@ -155,6 +155,7 @@ module Bosh::QingCloud
         @logger.info("Creating new server `#{server_name}'...")
 
         begin
+          sleep(60)
           wait_resource(server["instances"][0], "running", method(:get_vm_status))
         rescue Bosh::Clouds::CloudError => e
           @logger.warn("Failed to create server: #{e.message}")
