@@ -1,5 +1,11 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 
+require 'uri'
+require 'excon'
+require "openssl"
+require "base64"
+require 'uri'
+
 module Bosh::HwCloud
 
   class Cloud < Bosh::Cloud
@@ -20,14 +26,16 @@ module Bosh::HwCloud
     # @option options [Hash] aws AWS specific options
     # @option options [Hash] agent agent options
     # @option options [Hash] registry agent options
+
+#by zxy
     def initialize(options)
       @options = options.dup.freeze
       validate_options
 
       @logger = Bosh::Clouds::Config.logger
 
-      initialize_qingcloud
-      initialize_registry
+      initialize_hwcloud
+#      initialize_registry
 
       @metadata_lock = Mutex.new
     end
@@ -400,11 +408,19 @@ module Bosh::HwCloud
       end
     end
 
+
+#by zxy
     def get_disks(disk_id)
       with_thread_name("get_disks(#{disk_id})") do
-        ret = @qingcloudsdk.describe_volumes(disk_id)
+      
+      options={
+    :'VolumeId[0]'          => "#{disk_id}",
+    :AvailabilityZone  =>  'b451c1ea3c8d4af89d03e5cacf1e4276'
+      }
+        ret = @hwcloudsdk.describe_volumes(options)
       end
     end
+
 
     def get_disk_status(volume_id)
       with_thread_name("get_disk_status(#{volume_id})") do
@@ -571,12 +587,24 @@ module Bosh::HwCloud
     # Delete a stemcell and the accompanying snapshots
     # @param [String] stemcell_id  name of the stemcell to be deleted
     def delete_stemcell(stemcell_id)
-      with_thread_name("delete_stemcell(#{stemcell_id})") do      
-        image = @qingcloudsdk.describe_images(stemcell_id)
+      with_thread_name("delete_stemcell(#{stemcell_id})") do
+        options={
+            :'Filter[1].Name' => "#{stemcell_id}",
+            :'Filter[1].Value[0]' => 'gc-test',
+        }
+
+        image = @hwcloudsdk.describe_images_by_name(stemcell_id)
+        puts image
+
         if image[:total_count] != 0
-          ret = @qingcloudsdk.delete_images(stemcell_id)
+          puts "haha"
+          options={
+              :'ImageFolderName[0]' => "#{stemcell_id}",
+          }
+          ret = @hwcloudsdk.delete_images(options)
           @logger.info("Stemcell `#{stemcell_id}' is now deleted")
         else
+          puts "555"
           @logger.info("Stemcell `#{stemcell_id}' not found. Skipping.")
         end
       end
@@ -627,6 +655,11 @@ module Bosh::HwCloud
       @qingcloud_properties ||= options.fetch('hwcloud')
     end
 
+    # by zxy
+    def hwcloud_properties
+      @hwcloud_properties ||= options.fetch('hwcloud')
+    end
+
     def qingcloud_region
       @qingcloud_region ||= qingcloud_properties.fetch('region', nil)
     end
@@ -651,6 +684,26 @@ module Bosh::HwCloud
       @default_security_groups = qingcloud_properties["default_security_groups"]
       @wait_resource_poll_interval = qingcloud_properties["wait_resource_poll_interval"] || 5
       @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
+
+    end
+    #by zxy
+    def initialize_hwcloud
+      hwcloud_logger = logger
+      hwcloud_params = {
+          :url =>            hwcloud_properties['url'],
+          :HWSAccessKeyId =>            hwcloud_properties['HWSAccessKeyId'],
+          :Version=>     hwcloud_properties['Version'],
+          :SignatureMethod=> hwcloud_properties['SignatureMethod'],
+          :SignatureNonce=> hwcloud_properties['SignatureNonce'],
+          :SignatureVersion=> hwcloud_properties['SignatureVersion'],
+          :RegionName=> hwcloud_properties['RegionName'],
+          :Key=> hwcloud_properties['Key'],
+      }
+
+
+      @wait_resource_poll_interval = hwcloud_properties["wait_resource_poll_interval"] || 5
+     # require "huaweicloud"
+      @hwcloudsdk = HwCloud::HwCloudSdk.new(hwcloud_params)
 
     end
 
@@ -722,9 +775,11 @@ module Bosh::HwCloud
     # Checks if options passed to CPI are valid and can actually
     # be used to create all required data structures etc.
     #
+
+#by zxy
     def validate_options
       required_keys = {
-          "hwcloud" => ["region", "access_key_id", "secret_access_key"],
+          "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key"],
           #"registry" => ["endpoint", "user", "password"],
       }
 
@@ -740,7 +795,6 @@ module Bosh::HwCloud
 
       raise ArgumentError, "missing configuration parameters > #{missing_keys.join(', ')}" unless missing_keys.empty?
     end
-
     ##
     # Checks if the HwCloud instance type has ephemeral disk
     #

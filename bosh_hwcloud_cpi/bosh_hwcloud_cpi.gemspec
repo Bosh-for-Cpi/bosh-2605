@@ -4,7 +4,7 @@ require File.expand_path('../lib/cloud/hwcloud/version', __FILE__)
 version = Bosh::HwCloud::VERSION
 
 Gem::Specification.new do |s|
-  s.name         = 'bosh_qingcloud_cpi'
+  s.name         = 'bosh_hwcloud_cpi'
   s.version      = version
   s.platform     = Gem::Platform::RUBY
   s.summary      = 'BOSH HwCloud CPI'
@@ -19,9 +19,9 @@ Gem::Specification.new do |s|
   s.files        = Dir.glob("bin/**/*") + Dir.glob("lib/**/*") + Dir.glob("scripts/**/*") + %w(README.md)
   s.require_path = 'lib'
   s.bindir       = 'bin'
-  s.executables  = %w(bosh_qingcloud_console)
+  s.executables  = %w(bosh_hwcloud_console)
 
-#  s.add_dependency 'hwcloud-sdk',       '=0.8.7'
+  s.add_dependency 'hwcloud-sdk',       '=1.0000.0'
   s.add_dependency 'bosh_common',   "~>#{version}"
   s.add_dependency 'bosh_cpi',      "~>#{version}"
   s.add_dependency 'bosh-registry', "~>#{version}"

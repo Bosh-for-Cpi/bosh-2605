@@ -6,7 +6,7 @@
 #                  {"instance_type" => "m1.small"}, {}, [], {"foo" =>"bar"})
 
 require 'psych'
-require "bosh_qingcloud_cpi"
+require "bosh_hwcloud_cpi"
 require "irb"
 require "irb/completion"
 require "ostruct"
@@ -28,7 +28,7 @@ end
 @config = Psych.load_file(config_file)
 module ConsoleHelpers
   def cpi
-    @cpi ||= Bosh::QingCloud::Cloud.new(@config)
+    @cpi ||= Bosh::HwCloud::Cloud.new(@config)
   end
 
   def ec2
@@ -52,6 +52,6 @@ rescue LoadError
   puts "=> ruby-debug not found, debugger disabled"
 end
 
-puts "=> Welcome to BOSH QingCloud CPI console"
+puts "=> Welcome to BOSH HwCloud CPI console"
 puts "You can use 'cpi' to access CPI methods"
 IRB.start
