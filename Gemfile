@@ -13,6 +13,7 @@ source 'https://rubygems.org'
   bosh_cli
   bosh_cli_plugin_aws
   bosh_cli_plugin_micro
+  bosh_hwcloud_cpi
   bosh_openstack_cpi
   bosh_qingcloud_cpi
   bosh-registry

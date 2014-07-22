@@ -47,6 +47,7 @@ PATH
       bosh_aws_cpi (~> 1.2605.0)
       bosh_common (~> 1.2605.0)
       bosh_cpi (~> 1.2605.0)
+      bosh_hwcloud_cpi (~> 1.2605.0)      
       bosh_openstack_cpi (~> 1.2605.0)
       bosh_qingcloud_cpi (~> 1.2605.0)
       bosh_vcloud_cpi (~> 0.5.4)
@@ -202,6 +203,17 @@ PATH
   specs:
     bosh_cpi (1.2605.0)
       bosh_common (~> 1.2605.0)
+
+PATH
+  remote: bosh_hwcloud_cpi
+  specs:
+    bosh_hwcloud_cpi (1.2605.0)
+      bosh-registry (~> 1.2605.0)
+      bosh_common (~> 1.2605.0)
+      bosh_cpi (~> 1.2605.0)
+      fog (~> 1.14.0)
+      httpclient (= 2.2.4)
+      yajl-ruby (>= 0.8.2)
 
 PATH
   remote: bosh_openstack_cpi
@@ -490,6 +502,7 @@ DEPENDENCIES
   bosh_cli_plugin_micro!
   bosh_common!
   bosh_cpi!
+  bosh_hwcloud_cpi! 
   bosh_openstack_cpi!
   bosh_qingcloud_cpi!
   bosh_vsphere_cpi!

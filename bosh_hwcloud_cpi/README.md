@@ -1,7 +1,7 @@
 # BOSH HwCloud Cloud Provider Interface
 Copyright (c) 2009-2012 VMware, Inc.
 
-For online documentation see: http://rubydoc.info/gems/bosh_qingcloud_cpi/
+For online documentation see: http://rubydoc.info/gems/bosh_hwcloud_cpi/
 
 ## Options
 
