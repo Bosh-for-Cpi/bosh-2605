@@ -595,7 +595,7 @@ module Bosh::HwCloud
     def delete_stemcell(stemcell_id)
       with_thread_name("delete_stemcell(#{stemcell_id})") do
         options={
-          :'Filter[0].Name' => 'imageName',
+          :'Filter[0].Name' => 'imageID',
           :'Filter[0].Value[0]' => "#{stemcell_id}",
         }
         image = @hwcloudsdk.describe_images_by_name(options)
