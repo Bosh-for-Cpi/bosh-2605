@@ -76,156 +76,101 @@ module Bosh::HwCloud
       SecureRandom.uuid
     end
     
-    ##
-    # Create an EC2 instance and wait until it's in running state
-    # @param [String] agent_id agent id associated with new VM
-    # @param [String] stemcell_id AMI id of the stemcell used to
-    #  create the new instance
-    # @param [Hash] resource_pool resource pool specification
-    # @param [Hash] network_spec network specification, if it contains
-    #  security groups they must already exist
-    # @param [optional, Array] disk_locality list of disks that
-    #   might be attached to this instance in the future, can be
-    #   used as a placement hint (i.e. instance will only be created
-    #   if resource pool availability zone is the same as disk
-    #   availability zone)
-    # @param [optional, Hash] environment data to be merged into
-    #   agent settings
-    # @return [String] EC2 instance id of the new virtual machine
+  def create_vm(agent_id, stemcell_id, resource_pool, network_spec, disk_locality = nil, environment = nil)
+    with_thread_name("create_vm(#{agent_id}, ...)") do 
+      @logger.info('Creating new server...')
+      server_name = "vm-#{generate_unique_name}"
+    
+      #network
+      network_configurator = NetworkConfigurator.new(network_spec)
+      security_groups = network_configurator.security_groups(@default_security_groups)
+      @logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
 
-    def create_vm(agent_id, stemcell_id,
-        resource_pool, network_spec, disk_locality = nil, environment = nil)
-      with_thread_name("create_vm(#{agent_id}, ...)") do
+      #check image exists
+      image_options = {
+            :'Filter[0].Name' => 'imageName',
+            :'Filter[0].Value[0]' => "#{stemcell_id}",
+      }
+      image = @hwcloudsdk.describe_images_by_name(image_options)
+      cloud_error("Image `#{stemcell_id}' not found") if image["imageSet"]["imageSet"].empty?
+      @logger.debug("Using image: `#{stemcell_id}'")
 
-        @logger.info('Creating new server...')
-        server_name = "vm-#{generate_unique_name}"
+      #check instnce_type
+      instance_type = resource_pool['instance_type']
 
-        network_configurator = NetworkConfigurator.new(network_spec)
-        nics = network_configurator.nics
-        @logger.debug("Using NICs: `#{nics.join(', ')}'")
+      #check keypair
+      keyname = resource_pool['key_name']
+      key_options = {
+        'KeyName[0]'.to_sym = keyname
+      }
+      keypair = @hwcloudsdk.describe_key_pairs(keyname)
+      cloud_error("Key-pair `#{keyname}' not found") unless keypair['keypairsSet']
+      @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
 
-        security_groups_info = @qingcloudsdk.describe_security_groups() 
-        qingcloud_security_groups = []
-        security_groups_info["security_group_set"].each do |sg|
-          qingcloud_security_groups << sg["security_group_id"]
-        end
+      server_options = {
+        'InstanceType'.to_sym => instnce_type,
+        'KeyName'.to_sym      => keypair,
+        'ImageId'.to_sym      => stemcell_id,
+        'MinCount'.to_sym     => 1,
+        'MaxCount'.to_sym     => 1,
+        #'LinkType'.to_sym     => 
+        'AvailabilityZone'.to_sym  =>  @AvailabilityZone,
+        'SecurityGroupId'.to_sym   => security_groups[0] 
+      } 
 
-        security_groups = network_configurator.security_groups(@default_security_groups) 
-        security_groups.each do |sg|
-          cloud_error("Security group `#{sg}' not found") unless qingcloud_security_groups.include?(sg)
-        end
-        
-        #check image 
-        image = @qingcloudsdk.describe_images(stemcell_id)
+      ret = @hwcloudsdk.run_instances(server_options)
+    
+      #wait running
+      wait_resource(, "running", method(:get_vm_status))
 
-        cloud_error("Image `#{stemcell_id}' not found") if image["total_count"] == 0
-        @logger.debug("Using image: `#{stemcell_id}'")
+    
+      #bind vip ....................................
+      network_configurator.config
 
-        #check instance type
-        instance_type = resource_pool['instance_type']
-        instance_types = @qingcloudsdk.find_instance_types(qingcloud_region)
-        cloud_error("instance_type `#{instance_type}' not found") unless instance_types.include?(instance_type)
-
-        #check keypair
-        keyname = resource_pool['key_name'] || @default_key_name
-        keypair = @qingcloudsdk.describe_key_pairs(keyname)
-
-        cloud_error("Key-pair `#{keyname}' not found") if keypair["total_count"] != 1
-        @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
-
-        net_id = "vxnet-0"
-        network_spec.each_pair do |name, network|
-          network_type = network["type"] || "manual"
-          if network_type == "dynamic"
-            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-          elsif network_type == "manual"
-            static_ip = network["ip"]
-            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-            net_id = net_id + "|" + static_ip unless static_ip == nil
-          end
-        end
-
-        user_data = Base64.encode64(user_data(server_name, network_spec, "ssh-rsa " + keypair["keypair_set"][0]["pub_key"]).to_json)
-        server_params = {
-          :instance_name => server_name,
-          :image_id => stemcell_id,
-          :instance_type => instance_type,
-          :login_mode  => "keypair",
-          :login_keypair => keyname,
-          :vxnets => net_id,
-          :security_group => security_groups[0],
-          :user_data => user_data
-        }
-
-        server = @qingcloudsdk.run_instances(server_params)
-
-        cloud_error("run_instances is failed, #{server["message"]}") if server["ret_code"] != 0
-        @logger.info("Creating new server `#{server_name}'...")
-
-        begin
-          sleep(60)
-          wait_resource(server["instances"][0], "running", method(:get_vm_status))
-        rescue Bosh::Clouds::CloudError => e
-          @logger.warn("Failed to create server: #{e.message}")
-          @qingcloudsdk.terminate_instances(instance_info["instances"][0])
-          raise Bosh::Clouds::VMCreationFailed.new(true)
-        end
-
-        #associate floationg ip
-        @logger.info("Configuring network for server `#{server["instances"][0]}'...")
-        network_configurator.configure(@qingcloudsdk, server)
-
-        @logger.info("Updating settings for server `#{server["instances"][0]}'...")
-        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
-                                          flavor_has_ephemeral_disk?(instance_type))
-        # @registry.update_settings(server["instances"][0], settings)
-        @registry.update_settings(server_name, settings)
-        server["instances"][0]
-      end
     end
+  end
+     
 
-    ##
-    # Delete Qing instance ("terminate" in Qing language) and wait until
-    # it reports as terminated
-    # @param [String] instance_id EC2 instance id
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
         logger.info("Deleting instance '#{instance_id}'")
 
-        instance_info = @qingcloudsdk.describe_exist_instances(instance_id)
-        if instance_info["total_count"] != 0 
-          @qingcloudsdk.terminate_instances(instance_id)
-          wait_resource(instance_id, "terminated", method(:get_vm_status))
-
-          @logger.info("Deleting settings for server `#{instance_id}'/`#{instance_info["instance_set"][0]["instance_name"]}'...")
-          @registry.delete_settings(instance_info["instance_set"][0]["instance_name"])
+        if has_vm?(instance_id)
+          @logger.info("Deleting settings for server #{instance_id}")
+          options = {'InstanceId[0]'.to_sym => instance_id}
+          @hwcloudsdk.terminate_instances(options)
+          @registry.delete_settings(instance_id)
         else
           @logger.info("Server `#{instance_id}' not found. Skipping.")
         end
       end
     end
 
-    ##
-    # Reboot Qing instance
-    # @param [String] instance_id Qing instance id
     def reboot_vm(instance_id)
       with_thread_name("reboot_vm(#{instance_id})") do
-        instance_info = @qingcloudsdk.describe_exist_instances(instance_id)
-        cloud_error("Server `#{instance_id}' not found") if instance_info["total_count"] == 0
+        cloud_error("Server `#{instance_id}' not found") if !has_vm?(instance_id)
 
         @logger.info("Restart server `#{instance_id}'...")
-        ret = @qingcloudsdk.restart_instances(instance_id)
-        wait_resource(instance_id, "running", method(:get_vm_status))
+
+        options = {'InstanceId[0]'.to_sym => instance_id}
+        @hwcloudsdk.reboot_instances(options)
+        wait_resource(instance_id, [:running], method(:get_vm_status))
       end
     end
 
-    ##
-    # Has Qing instance
-    # @param [String] instance_id Qing instance id
     def has_vm?(instance_id)
       with_thread_name("has_vm?(#{instance_id})") do
-        ret = @qingcloudsdk.describe_instances(instance_id)
-        ret["total_count"] != 0  &&  ![:terminated, :ceased].include?(ret["instance_set"][0]["status"])
+        options = {'InstanceId[0]'.to_sym => instance_id}
+        instance = @hwcloudsdk.describe_instances(options)
+        instance['instancesSet']
+      end
+    end
+
+    def get_vm_status(instance_id)
+      with_thread_name("get_vm_status(#{instance_id})") do
+        options = {'InstanceId[0]'.to_sym => instance_id}
+        instance = @hwcloudsdk.describe_instances(options)
+        return instance['instancesSet']['instancesSet'][0]['instanceState']['name'].to_sym
       end
     end
 
@@ -429,16 +374,6 @@ module Bosh::HwCloud
       end
     end
 
-    def get_vm_status(instance_id)
-      with_thread_name("get_vm_status(#{instance_id})") do
-        ret = @qingcloudsdk.describe_instances(instance_id)
-        status = ""
-        if(ret["total_count"] == 1)
-          status = ret["instance_set"][0]["status"]
-        end
-        status
-      end
-    end
 
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
