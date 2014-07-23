@@ -154,7 +154,7 @@ module Bosh::HwCloud
 
         options = {'InstanceId[0]'.to_sym => instance_id}
         @hwcloudsdk.reboot_instances(options)
-        wait_resource(instance_id, [:running], method(:get_vm_status))
+        wait_resource(instance_id, "running", method(:get_vm_status))
       end
     end
 
@@ -170,7 +170,7 @@ module Bosh::HwCloud
       with_thread_name("get_vm_status(#{instance_id})") do
         options = {'InstanceId[0]'.to_sym => instance_id}
         instance = @hwcloudsdk.describe_instances(options)
-        return instance['instancesSet']['instancesSet'][0]['instanceState']['name'].to_sym
+        return instance['instancesSet']['instancesSet'][0]['instanceState']['name']
       end
     end
 
