@@ -180,30 +180,31 @@ module Bosh::HwCloud
     # @param [optional, String] volume name
     # @param [optional, Integer] volume count
     # @return [String] created  volume id
-    def create_disk(size, server_id = nil)
-      with_thread_name("create_disk(#{size}, #{server_id})") do
+    def create_disk(size, instance_id = nil)
+      with_thread_name("create_disk(#{size}, #{instance_id})") do
         validate_disk_size(size)
 
         volume_params = {
-          :size => (size / 1024.0).ceil,
+          :Size => (size / 1024.0).ceil,
           :name => "volume-#{generate_unique_name}",
-          :count => 1          
+          :AvailabilityZone => 'b451c1ea3c8d4af89d03e5cacf1e4276'
         }
 
         logger.info("Creating new volume '#{volume_params[:name]}'")
-        volume_info = @qingcloudsdk.create_volumes(volume_params)
+        volume_info = @hwcloudsdk.create_volume(volume_params)
+        cloud_error("HwCloud CPI Create Volume Failed") unless /vol-[A-Za-z0-9]{8}/.match(volume_info["volumeId"])     
+        wait_resource(volume_info["volumeId"], "available", method(:get_disk_status))
+        puts volume_info["volumes"]
 
-        wait_resource(volume_info["volumes"][0], "available", method(:get_disk_status))
-        volume_info["volumes"][0]
+        volume_info["volumes"]
       end
     end
 
     def validate_disk_size(size)
       raise ArgumentError, "disk size needs to be an integer" unless size.kind_of?(Integer)
-      raise ArgumentError, "disk size needs to be Divisible by 10" unless (size % 10 == 0)
 
-      cloud_error("HwCloud CPI minimum disk size is 10  GiB") if size < 1024 * 10
-      cloud_error("HwCloud CPI maximum disk size is 500 GiB") if size > 1024 * 500
+      cloud_error("HwCloud CPI minimum disk size is 1  GiB") if size < 1024
+      cloud_error("HwCloud CPI maximum disk size is 1000 GiB") if size > 1024 * 1000
     end
 
     ##
@@ -213,21 +214,21 @@ module Bosh::HwCloud
     def delete_disk(disk_id)
       with_thread_name("delete_disk(#{disk_id})") do
         @logger.info("Deleting volume `#{disk_id}'...")
-        volume_info = @qingcloudsdk.describe_volumes(disk_id)
-        state = volume_info["volume_set"][0]["status"]
-        if volume_info["total_count"] != 0  && ![:deleted, :ceased].include?(state)
 
+        state = get_disk_status(disk_id)
+        if state  != "noexist"
           if  state != "available"
             cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
           end
-
-          ret = @qingcloudsdk.delete_volumes(disk_id)
-          wait_resource(disk_id, "deleted", method(:get_disk_status))
+          options={
+            :'VolumeId[0]'          => "#{disk_id}",
+          }
+          ret = @hwcloudsdk.delete_volume(options)
+          wait_resource(disk_id, "noexist", method(:get_disk_status))
         else
           @logger.info("Volume `#{disk_id}' not found. Skipping.")
         end
       end
-
     end
 
     # Attach an  volume to an instance
@@ -239,13 +240,10 @@ module Bosh::HwCloud
         cloud_error("Instance `#{instance_id}' not found") unless instance
 
         ret_info = get_disks(disk_id)
-        cloud_error("Volume `#{disk_id}' not found") if ret_info["total_count"] == 0
+        cloud_error("Volume `#{disk_id}' not found") unless ret_info["volumeSet"]
 
-        disk_name=  ret_info["volume_set"][0]["volume_name"]
-        disk_status = ret_info["volume_set"][0]["status"]
-        cloud_error('Disk is in use') if disk_status != "available"
-
-        device_name = attach_volume(disk_id, instance_id)
+        disk_name=  ret_info["volumeSet"]["volumeSet"][0]["volumeName"]
+        device_name = attach_volume(ret_info, instance_id)
 
         update_agent_settings(instance_id) do |settings|
           settings["disks"] ||= {}
@@ -259,68 +257,32 @@ module Bosh::HwCloud
       end
     end
 
-
     ##
     # Attaches an HwCloud volume to an OpenStack server
     #
     # @param disk id
     # @param instance id
     # @return [String] Device name
-    def attach_volume(disk_id, instance_id)
-      @logger.info("Attaching volume `#{disk_id}' to server `#{instance_id}'...")
-      volume_info = @qingcloudsdk.describe_volumes(disk_id)
-      volume_id = volume_info["volume_set"][0]["volume_id"]
-
-      if volume_info["volume_set"][0]["status"] != "available"
-        instance_disk_id = volume_info["volume_set"][0]["instance"]["instance_id"]
+    def attach_volume(disk_info, instance_id)
+      puts disk_info
+      disk_status = disk_info["volumeSet"]["volumeSet"][0]["status"]
+      disk_id = disk_info["volumeSet"]["volumeSet"][0]["volumeId"]
+      if disk_status != "available"
+        instance_disk_id = disk_info["volumeSet"]["volumeSet"][0]["attachmentSet"]["attachmentSet"][0]["instanceId"]
         cloud_error("Instance `#{instance_id}' is not attach to #{disk_id}") unless instance_disk_id == instance_id
       end
 
-      devices_name = []
-      update_agent_settings(instance_id) do |settings|
-        if settings["disks"] != nil && settings["disks"]["persistent"] != nil
-          settings["disks"]["persistent"].each_pair do |id, name|
-            devices_name << name
-          end
-        end
-      end
+      cloud_error('Disk is in use') if disk_status != "available"
 
-      if devices_name.empty?
-        device_name = select_device_name(devices_name)
-        attachment = @qingcloudsdk.attach_volumes(disk_id, instance_id)
-        wait_resource(disk_id, "in-use", method(:get_disk_status))
-      else
+      options={
+        :VolumeId   => "#{disk_id}",
+        :InstanceId => "#{instance_id}"
+      }
+      attachment = @hwcloudsdk.attach_volume(options)
+      wait_resource(disk_id, "in-use", method(:get_disk_status))
 
-        update_agent_settings(instance_id) do |settings|
-          if settings["disks"] != nil && settings["disks"]["persistent"] != nil
-            settings["disks"]["persistent"].each_pair do |id, name|
-              device_name = name if id == volume_id
-            end
-          end
-        end
-
-        @logger.info("Volume `#{disk_id}' is already attached to server `#{instance_id}' in `#{device_name}'. Skipping.")
-      end
-
-      device_name
-    end
-
-    ##
-    # Select the first available device name
-    #
-    # @param [Array] volume_attachments Volume attachments
-    # @param [String] first_device_name_letter First available letter for device names
-    # @return [String] First available device name or nil is none is available
-    def select_device_name(devices)
-      ('c'..'z').each do |char|
-        # Some kernels remap device names (from sd* to vd* or xvd*).
-        device_name = "/dev/sd#{char}"
-        # Bosh Agent will lookup for the proper device name if we set it initially to sd*.
-        return device_name unless  !devices.empty? && devices.include(device_name)
-        @logger.warn("`/dev/sd#{char}' is already taken")
-      end
-
-      nil
+      ret_info = get_disks(disk_id)
+      ret_info["volumeSet"]["volumeSet"][0]["attachmentSet"]["attachmentSet"] [0]["device"]
     end
 
     # Detach an EBS volume from an EC2 instance
@@ -332,12 +294,18 @@ module Bosh::HwCloud
         cloud_error("Instance `#{instance_id}' not found") unless instance
 
         ret_info = get_disks(disk_id)
-        cloud_error("Volume `#{disk_id}' not found") unless ret_info["total_count"] == 1
+        cloud_error("Volume `#{disk_id}' not found") unless ret_info["volumeSet"]
 
-        disk_instance_id = ret_info["volume_set"][0]["instance"]["instance_id"]
+        disk_instance_id = ret_info["volumeSet"]["volumeSet"][0]["attachmentSet"]["attachmentSet"][0]["instanceId"]
+        puts disk_instance_id
+        puts instance_id
+        puts ret_info 
         if disk_instance_id == instance_id
-          detachment = @qingcloudsdk.detach_volumes(disk_id, instance_id)
 
+          options={:VolumeId   => "#{disk_id}",
+                   :InstanceId => "#{instance_id}"}
+          stop_vm(instance_id)
+          detachment = @hwcloudsdk.detach_volume(options)
           wait_resource(disk_id, "available", method(:get_disk_status))
 
           update_agent_settings(instance_id) do |settings|
@@ -353,6 +321,13 @@ module Bosh::HwCloud
       end
     end
 
+    def stop_vm(instance_id)
+      with_thread_name("has_vm?(#{instance_id})") do
+        options = {'InstanceId[0]'.to_sym => instance_id}
+        instance = @hwcloudsdk.stop_instances(options)
+        wait_resource(instance_id, "stopped", method(:get_vm_status))
+      end
+    end
 
 #by zxy
     def get_disks(disk_id)
@@ -369,8 +344,14 @@ module Bosh::HwCloud
 
     def get_disk_status(volume_id)
       with_thread_name("get_disk_status(#{volume_id})") do
-        ret_info = @qingcloudsdk.describe_volumes(volume_id)
-        return ret_info["volume_set"][0]["status"] 
+        ret_info = get_disks(volume_id)
+        puts ret_info
+        if  ret_info["volumeSet"] == nil || ret_info["volumeSet"]["volumeSet"].empty?
+            state = "noexist" 
+        else 
+          state = ret_info["volumeSet"]["volumeSet"][0]["status"] 
+        end
+        return state
       end
     end
 
