@@ -415,7 +415,7 @@ module Bosh::HwCloud
       
       options={
     :'VolumeId[0]'          => "#{disk_id}",
-    :AvailabilityZone  =>  'b451c1ea3c8d4af89d03e5cacf1e4276'
+    #:AvailabilityZone  =>  'b451c1ea3c8d4af89d03e5cacf1e4276'
       }
         ret = @hwcloudsdk.describe_volumes(options)
       end
@@ -574,13 +574,19 @@ module Bosh::HwCloud
     # @return [String] EC2 AMI name of the stemcell
     def create_stemcell(image_path, stemcell_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
-        
-        stemcell_info = @qingcloudsdk.describe_images_by_name("qingcloud_stemcell")
-        if stemcell_info["total_count"] == 0
+
+        options={
+          :'Filter[0].Name' => 'imageName',
+          :'Filter[0].Value[0]' => "hwcloud_stemcell",
+        }
+
+        stemcell_info = @hwcloudsdk.describe_images_by_name(options)
+
+        if stemcell_info["imageSet"]["imageSet"].empty?
           raise "can't find the stemcell"
         end
 
-        image_id = stemcell_info["image_set"][0]["image_id"]
+        image_id = stemcell_info["imageSet"]["imageSet"][0]["imageId"]
       end
     end
 
@@ -589,23 +595,24 @@ module Bosh::HwCloud
     def delete_stemcell(stemcell_id)
       with_thread_name("delete_stemcell(#{stemcell_id})") do
         options={
-            :'Filter[1].Name' => "#{stemcell_id}",
-            :'Filter[1].Value[0]' => 'gc-test',
+          :'Filter[0].Name' => 'imageName',
+          :'Filter[0].Value[0]' => "#{stemcell_id}",
         }
+        image = @hwcloudsdk.describe_images_by_name(options)
 
-        image = @hwcloudsdk.describe_images_by_name(stemcell_id)
-        puts image
 
-        if image[:total_count] != 0
-          puts "haha"
-          options={
-              :'ImageFolderName[0]' => "#{stemcell_id}",
-          }
-          ret = @hwcloudsdk.delete_images(options)
-          @logger.info("Stemcell `#{stemcell_id}' is now deleted")
-        else
-          puts "555"
+        if image["imageSet"]["imageSet"].empty?
+
           @logger.info("Stemcell `#{stemcell_id}' not found. Skipping.")
+
+        elsif image["imageSet"]["imageSet"][0]["imageFolderName"] == nil
+          @logger.info("Stemcell `#{stemcell_id}' is base stemell.Can not delee. Skipping.")
+         else
+           options={
+             :'ImageFolderName[0]' => "#{image["imageSet"]["imageSet"][0]["imageFolderName"]}",
+           }
+           ret = @hwcloudsdk.delete_images(options)
+           @logger.info("Stemcell `#{stemcell_id}' is now deleted")
         end
       end
     end
