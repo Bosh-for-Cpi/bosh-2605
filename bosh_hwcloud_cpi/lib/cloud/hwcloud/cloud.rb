@@ -709,6 +709,8 @@ module Bosh::HwCloud
 
 
       @wait_resource_poll_interval = hwcloud_properties["wait_resource_poll_interval"] || 5
+
+      @availabilityzone=hwcloud_properties["AvailabilityZone"]
      # require "huaweicloud"
       @hwcloudsdk = HwCloud::HwCloudSdk.new(hwcloud_params)
 
@@ -786,7 +788,7 @@ module Bosh::HwCloud
 #by zxy
     def validate_options
       required_keys = {
-          "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key"],
+          "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key","AvailabilityZone"],
           #"registry" => ["endpoint", "user", "password"],
       }
 
