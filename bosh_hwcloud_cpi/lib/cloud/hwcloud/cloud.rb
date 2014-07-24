@@ -268,7 +268,7 @@ module Bosh::HwCloud
         cloud_error("Instance `#{instance_id}' is not attach to #{disk_id}") unless instance_disk_id == instance_id
       end
 
-      if disk_status == "in-use"
+      if disk_status == "available"
         options={
           :VolumeId   => "#{disk_id}",
           :InstanceId => "#{instance_id}"
@@ -657,12 +657,15 @@ module Bosh::HwCloud
         raise ArgumentError, "block is not provided"
       end
 
-      instance_info = @qingcloudsdk.describe_instances(instance_id)
-      if instance_info["total_count"] != 0 
+      option = {:'InstanceId[0]' => "#{instance_id}"}
+      instance_info = @hwcloudsdk.describe_instances(option)
+      puts instance_info["instancesSet"]
+      if instance_info["instancesSet"]
         # settings = registry.read_settings(instance_id)
-        settings = registry.read_settings(instance_info["instance_set"][0]["instance_name"])
+        puts instance_info["instancesSet"]["instancesSet"][0]["instanceName"]
+        settings = registry.read_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"])
         yield settings
-        registry.update_settings(instance_info["instance_set"][0]["instance_name"], settings)
+        registry.update_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"], settings)
       else
         @logger.info("Server `#{instance_id}' not found. Skipping.")
       end
