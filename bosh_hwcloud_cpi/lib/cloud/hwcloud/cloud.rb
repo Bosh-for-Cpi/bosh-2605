@@ -83,12 +83,13 @@ module Bosh::HwCloud
     
       #network
       network_configurator = NetworkConfigurator.new(network_spec)
-      security_groups = network_configurator.security_groups(@default_security_groups)
+      security_groups = network_configurator.security_groups(nil)
       @logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
+
 
       #check image exists
       image_options = {
-            :'Filter[0].Name' => 'imageName',
+            :'Filter[0].Name' => 'imageID',
             :'Filter[0].Value[0]' => "#{stemcell_id}",
       }
       image = @hwcloudsdk.describe_images_by_name(image_options)
@@ -97,35 +98,52 @@ module Bosh::HwCloud
 
       #check instnce_type
       instance_type = resource_pool['instance_type']
+      @logger.debug("Using instance type: `#{instance_type}'")
+
+      #link_type not need
+      #link_type = resource_pool['link_type']
+      #@logger.debug("Using link_type: `#{link_type}'")
 
       #check keypair
-      keyname = resource_pool['key_name']
-      key_options = {
-        'KeyName[0]'.to_sym = keyname
+      keyname = resource_pool['key_name'] || @default_key_name
+      key_options = { 
+        'KeyName[0]'.to_sym => keyname
       }
-      keypair = @hwcloudsdk.describe_key_pairs(keyname)
+      keypair = @hwcloudsdk.describe_key_pairs(key_options)
       cloud_error("Key-pair `#{keyname}' not found") unless keypair['keypairsSet']
-      @logger.debug("Using key-pair: `#{keypair["keypair_set"][0]["keypair_name"]}'")
+      #@logger.debug("Using key-pair: ${keyname}")
 
       server_options = {
-        'InstanceType'.to_sym => instnce_type,
-        'KeyName'.to_sym      => keypair,
+        'InstanceType'.to_sym => instance_type,
+        'KeyName'.to_sym      => keyname,
         'ImageId'.to_sym      => stemcell_id,
         'MinCount'.to_sym     => 1,
         'MaxCount'.to_sym     => 1,
-        #'LinkType'.to_sym     => 
-        'AvailabilityZone'.to_sym  =>  @AvailabilityZone,
+        'AvailabilityZone'.to_sym  => @availabilityzone,
         'SecurityGroupId'.to_sym   => security_groups[0] 
       } 
 
       ret = @hwcloudsdk.run_instances(server_options)
+      instance_id = ret['instanceId']
     
       #wait running
-      wait_resource(, "running", method(:get_vm_status))
+      wait_resource(instance_id, "running", method(:get_vm_status))
 
-    
-      #bind vip ....................................
-      network_configurator.config
+      #acquire vm info
+      options={}
+      options = {
+        'InstanceId[0]'.to_sym => instance_id
+      }
+      instance_info = @hwcloudsdk.describe_instances(options)
+
+      #bind vip , need to modify 
+      network_configurator.configure(@hwcloudsdk, instance_info)
+
+      settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
+                                          flavor_has_ephemeral_disk?(instance_type))
+      @registry.update_settings(['instancesSet']['instancesSet'][0]['instanceName'], settings)
+
+      return instance_id
 
     end
   end
