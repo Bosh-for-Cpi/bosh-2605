@@ -411,11 +411,13 @@ module Bosh::HwCloud
       with_thread_name("configure_networks(#{instance_id}, ...)") do
         logger.info("Configuring '#{instance_id}' to use new network settings: #{network_spec.pretty_inspect}")
 
-        # instance = @ec2.instances[instance_id]
+        options={
+         :'InstanceId[0]' => instance_id,
+        }
 
-        instance_info = @qingcloudsdk.describe_instances(instance_id)
+        instance_info = @hwcloudsdk.describe_instances(options)
 
-        if instance_info == nil || instance_info["total_count"] == 0
+        if instance_info[instancesSet] == nil 
           cloud_error("Can not find the Instance")
         end
 
@@ -427,7 +429,7 @@ module Bosh::HwCloud
 
         # network_configurator.configure(@ec2, instance)
 
-        network_configurator.configure(@qingcloudsdk, instance_info)
+        network_configurator.configure(@hwcloudsdk, instance_info)
 
         update_agent_settings(instance_id) do |settings|
           settings["networks"] = network_spec

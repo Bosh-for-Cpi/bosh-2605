@@ -33,20 +33,14 @@ module Bosh::HwCloud
           when "dynamic"
             cloud_error("Must have exactly one dynamic or manual network per instance") if @network
             @network = DynamicNetwork.new(name, network_spec)
-            @security_groups += extract_security_groups(network_spec)
-            @net_id = extract_net_id(network_spec)
 
           when "manual"
             cloud_error("Must have exactly one dynamic or manual network per instance") if @network
             @network = ManualNetwork.new(name, network_spec)
-            @security_groups += extract_security_groups(network_spec)
-            @net_id = extract_net_id(network_spec)
-            cloud_error("Manual network must have net_id") if @net_id.nil?
 
           when "vip"
             cloud_error("More than one vip network") if @vip_network
             @vip_network = VipNetwork.new(name, network_spec)
-            @security_groups += extract_security_groups(network_spec)
 
           else
             cloud_error("Invalid network type `#{network_type}': HwCloud " \
@@ -72,15 +66,15 @@ module Bosh::HwCloud
       else
         # If there is no vip network we should disassociate any elastic IP
         # currently held by instance (as it might have had elastic IP before)
-        if instance["total_count"] == 1
-          if instance["instance_set"][0]["eip"] != nil &&  !(instance["instance_set"][0]["eip"].empty?)
-            @ip = instance["instance_set"][0]["eip"]["eip_id"]
-          end
+
+        if !instance["instancesSet"]["instancesSet"][0]["publicIpSet"]["publicIpSet"].empty?
+          @ip = instance["instancesSet"]["instancesSet"][0]["publicIpSet"]["publicIpSet"][0]["publicIp"]
         end
+
         if @ip
           @logger.info("Disassociating elastic IP `#{@ip}' " \
-                       "from instance `#{instance["instance_set"][0]}'")
-          hwcloud.dissociate_eips(@ip)
+                       "from instance `#{instance["instance_set"]["instancesSet"][0]["instanceId"]}'")
+          hwcloud.dissociate_address(@ip)
         end
       end
     end

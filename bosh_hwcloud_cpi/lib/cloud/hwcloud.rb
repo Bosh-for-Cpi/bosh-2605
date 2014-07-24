@@ -30,7 +30,6 @@ require "cloud/hwcloud/dynamic_network"
 require "cloud/hwcloud/manual_network"
 require "cloud/hwcloud/vip_network"
 require "cloud/hwcloud/tag_manager"
-#require "cloud/hwcloud/qingcloudsdk"
 
 module Bosh
   module Clouds
