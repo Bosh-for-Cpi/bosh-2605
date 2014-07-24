@@ -324,6 +324,40 @@ properties:
     description: AWS Region used by aws cpi
   aws.stemcell.kernel_id:
     description: AWS kernel id used by aws cpi
+  hwcloud.url:
+    description: HwCloud url 
+  hwcloud.access_key_id:
+    description: HwCloud access key id
+  hwcloud.key:
+    description: HwCloud key
+  hwcloud.signature_method:
+    description: HwCloud signature method 
+  hwcloud.signature_nonce:
+    description: HwCloud signature nonce
+  hwcloud.signature_version:
+    description: HwCloud signature version
+  hwcloud.version:
+    description: HwCloud version 
+  hwcloud.region_name:
+    description: HwCloud region name
+  hwcloud.availability_zone:
+    description: HwCloud availability zone
+  hwcloud.state_timeout:
+    description: Timeout (in seconds) for HwCloud resources desired state (optional, by default 300)
+    default: 300
+  hwcloud.boot_from_volume:
+    description: Boot from volume
+    default: false
+  hwcloud.stemcell_public_visibility:
+    description: Set public visibility for stemcells (optional, false by default)
+    default: false
+  hwcloud.connection_options:
+    description: Hash containing optional connection parameters to the HwCloud API
+  hwcloud.default_security_groups:
+    description: Default HwCloud security groups to use when spinning up new vms
+  hwcloud.wait_resource_poll_interval:
+    description: Changes the delay (in seconds) between each status check to HwCloud when creating a resource
+    default: 5      
   openstack.auth_url:
     description: URL of the OpenStack Identity endpoint to connect to
   openstack.username:

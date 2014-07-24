@@ -1,4 +1,5 @@
 require 'bosh/deployer/infrastructure_defaults/aws'
+require 'bosh/deployer/infrastructure_defaults/hwcloud'
 require 'bosh/deployer/infrastructure_defaults/openstack'
 require 'bosh/deployer/infrastructure_defaults/qingcloud'
 require 'bosh/deployer/infrastructure_defaults/vcloud'
@@ -9,6 +10,8 @@ module Bosh::Deployer::InfrastructureDefaults
     case plugin
       when 'aws'
         defaults = AWS
+      when 'hwcloud'
+        defaults = HWCLOUD       
       when 'openstack'
         defaults = OPENSTACK
       when 'qingcloud'

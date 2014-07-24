@@ -27,6 +27,22 @@ cloud:
     max_retries: <%= max_retries %>
     <% end %>
 <% end %>
+<% if_p('hwcloud.url', 'hwcloud.access_key_id', 'hwcloud.key', 'hwcloud.signature_method', 'hwcloud.signature_nonce', 'hwcloud.signature_version', 'hwcloud.version', 'hwcloud.region_name', 'hwcloud.availability_zone') do |url, access_key_id, key, signature_method, signature_nonce, signature_version, version, region_name, availability_zone| %>
+  plugin: hwcloud <% plugin = 'hwcloud' %>
+  hwcloud:
+    url: <%= url %>
+    access_key_id: <%= access_key_id %>
+    key: <%= key %>
+    signature_method: <%= signature_method %>
+    signature_nonce: <%= signature_nonce %>
+    signature_version: <%= signature_version %>
+    version: <%= version %>
+    region_name: <%= region_name %>
+    availability_zone: <%= availability_zone %>
+    <% if_p('hwcloud.connection_options') do |connection_options| %>
+    connection_options: <%= JSON.generate(connection_options) %>
+    <% end %>
+<% end %>
 <% if_p('openstack.auth_url', 'openstack.username', 'openstack.api_key', 'openstack.tenant') do |auth_url, username, api_key, tenant| %>
   plugin: openstack <% plugin = 'openstack' %>
   openstack:

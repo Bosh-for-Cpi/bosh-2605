@@ -12,6 +12,15 @@ module Bosh::Blobstore
             'hp_tenant_id' => 'tenant_id',
             'hp_avl_zone' => 'region'
           },
+          'hwcloud' => {
+            'hwcloud_url' => 'url',
+            'hwcloud_access_key_id' => 'access_key_id',
+            'hwcloud_key' => 'key',
+            'hwcloud_signature_method' => 'signature_method',
+            'hwcloud_version' => 'version',
+            'hwcloud_region_name' => 'region_name',
+            'hwcloud_availability_zone' => 'availability_zone'            
+          },          
           'openstack' => {
             'openstack_auth_url' => 'auth_url',
             'openstack_username' => 'username',
@@ -147,6 +156,142 @@ module Bosh::Blobstore
       describe 'without credentials' do
         before(:each) do
           @client = swift_blobstore(swift_options('test-container', 'hp', false))
+        end
+
+        describe '#create_file' do
+          it 'should refuse to create an object' do
+            expect { @client.create(data) }.to raise_error(BlobstoreError)
+          end
+        end
+
+        describe '#get_file' do
+          it 'should refuse to fetch an object without a public url' do
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+
+            expect { @client.get(oid) }.to raise_error(BlobstoreError)
+          end
+
+          it 'should fetch an object with a public url' do
+            response = double('response')
+
+            expect(@http_client).to receive(:get).with('public-url').and_yield(data).and_return(response)
+            allow(response).to receive(:status).and_return(200)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id', purl: 'public-url' })))
+            expect(@client.get(oid)).to eq(data)
+          end
+        end
+
+        describe '#delete_object' do
+          it 'should refuse to delete an object' do
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+
+            expect { @client.delete(oid) }.to raise_error(BlobstoreError)
+          end
+        end
+
+        describe '#object_exists?' do
+          it 'should raise a BlobstoreError exception' do
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+
+            expect { @client.exists?(oid).should be(true) }.to raise_error(BlobstoreError)
+          end
+        end
+      end
+    end
+
+    describe 'on HwCloud Cloud Storage' do
+      let(:data) { 'some content' }
+      let(:directories) { double('directories') }
+      let(:container) { double('container') }
+      let(:files) { double('files') }
+      let(:object) { double('object') }
+
+      describe 'with credentials' do
+        before(:each) do
+          @client = swift_blobstore(swift_options('test-container', 'hwcloud', true))
+        end
+
+        describe '#create_file' do
+          it 'should create an object' do
+            expect(@client).to receive(:generate_object_id).and_return('object_id')
+            allow(@swift).to receive(:directories).and_return(directories)
+            expect(directories).to receive(:get).with('test-container').and_return(container)
+            expect(container).to receive(:files).and_return(files)
+            expect(files).to receive(:create) do |opt|
+              expect(opt[:key]).to eq('object_id')
+              object
+            end
+            expect(object).to receive(:public_url).and_raise(NotImplementedError)
+
+            object_id = @client.create(data)
+            object_info = MultiJson.decode(Base64.decode64(URI.unescape(object_id)))
+            expect(object_info['oid']).to eq('object_id')
+            expect(object_info['purl']).to be(nil)
+          end
+        end
+
+        describe '#get_file' do
+          it 'should fetch an object without a public url' do
+            allow(@swift).to receive(:directories).and_return(directories)
+            expect(directories).to receive(:get).with('test-container').and_return(container)
+            expect(container).to receive(:files).and_return(files)
+            expect(files).to receive(:get).with('object_id').and_yield(data).and_return(object)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+            expect(@client.get(oid)).to eql(data)
+          end
+
+          it 'should fetch an object with a public url' do
+            response = double('response')
+
+            expect(@http_client).to receive(:get).with('public-url').and_yield(data).and_return(response)
+            allow(response).to receive(:status).and_return(200)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id', purl: 'public-url' })))
+            expect(@client.get(oid)).to eql(data)
+          end
+        end
+
+        describe '#delete_object' do
+          it 'should delete an object' do
+            allow(@swift).to receive(:directories).and_return(directories)
+            expect(directories).to receive(:get).with('test-container').and_return(container)
+            expect(container).to receive(:files).and_return(files)
+            expect(files).to receive(:get).with('object_id').and_return(object)
+            expect(object).to receive(:destroy)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+            @client.delete(oid)
+          end
+        end
+
+        describe '#object_exists?' do
+          it 'should return true if object exists' do
+            allow(@swift).to receive(:directories).and_return(directories)
+            expect(directories).to receive(:get).with('test-container').and_return(container)
+            expect(container).to receive(:files).and_return(files)
+            expect(files).to receive(:head).with('object_id').and_return(object)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+            expect(@client.exists?(oid)).to be(true)
+          end
+
+          it "should return false if object doesn't exists" do
+            allow(@swift).to receive(:directories).and_return(directories)
+           expect(directories).to receive(:get).with('test-container').and_return(container)
+           expect(container).to receive(:files).and_return(files)
+           expect(files).to receive(:head).with('object_id').and_return(nil)
+
+            oid = URI.escape(Base64.encode64(MultiJson.encode({ oid: 'object_id' })))
+            expect(@client.exists?(oid)).to be(false)
+          end
+        end
+      end
+
+      describe 'without credentials' do
+        before(:each) do
+          @client = swift_blobstore(swift_options('test-container', 'hwcloud', false))
         end
 
         describe '#create_file' do

@@ -255,7 +255,6 @@ module Bosh::HwCloud
         instance = has_vm?(instance_id)
         cloud_error("Instance `#{instance_id}' not found") unless instance
 
-
         ret_info = get_disks(disk_id)
         disk = has_disk?(ret_info)
         cloud_error("Volume `#{disk_id}' not found") unless disk
@@ -598,11 +597,6 @@ module Bosh::HwCloud
       @agent_properties ||= options.fetch('agent', {})
     end
 
-    def qingcloud_properties
-      @qingcloud_properties ||= options.fetch('hwcloud')
-    end
-
-    # by zxy
     def hwcloud_properties
       @hwcloud_properties ||= options.fetch('hwcloud')
     end
@@ -615,42 +609,24 @@ module Bosh::HwCloud
       qingcloud_properties.fetch('fast_path_delete', false)
     end
 
-    def initialize_qingcloud
-      qingcloud_logger = logger
-      qingcloud_params = {
-          region:            qingcloud_properties['region'],
-          access_key_id:     qingcloud_properties['access_key_id'],
-          secret_access_key: qingcloud_properties['secret_access_key'],
-          #ec2_endpoint:      qingcloud_properties['ec2_endpoint'] || default_ec2_endpoint,
-          #elb_endpoint:      aws_properties['elb_endpoint'] || default_elb_endpoint,
-          #max_retries:       aws_properties['max_retries']  || DEFAULT_MAX_RETRIES ,
-          logger:             qingcloud_logger
-      }
 
-      @default_key_name = qingcloud_properties["default_key_name"]
-      @default_security_groups = qingcloud_properties["default_security_groups"]
-      @wait_resource_poll_interval = qingcloud_properties["wait_resource_poll_interval"] || 5
-      @qingcloudsdk = QingCloudSDK.new(qingcloud_params) 
-
-    end
-    #by zxy
     def initialize_hwcloud
       hwcloud_logger = logger
       hwcloud_params = {
           :url =>            hwcloud_properties['url'],
-          :HWSAccessKeyId =>            hwcloud_properties['HWSAccessKeyId'],
-          :Version=>     hwcloud_properties['Version'],
-          :SignatureMethod=> hwcloud_properties['SignatureMethod'],
-          :SignatureNonce=> hwcloud_properties['SignatureNonce'],
-          :SignatureVersion=> hwcloud_properties['SignatureVersion'],
-          :RegionName=> hwcloud_properties['RegionName'],
-          :Key=> hwcloud_properties['Key'],
+          :HWSAccessKeyId =>            hwcloud_properties['access_key_id'],
+          :Version=>     hwcloud_properties['version'],
+          :SignatureMethod=> hwcloud_properties['signature_method'],
+          :SignatureNonce=> hwcloud_properties['signature_nonce'],
+          :SignatureVersion=> hwcloud_properties['signature_version'],
+          :RegionName=> hwcloud_properties['region_name'],
+          :Key=> hwcloud_properties['key'],
       }
 
 
       @wait_resource_poll_interval = hwcloud_properties["wait_resource_poll_interval"] || 5
 
-      @availabilityzone=hwcloud_properties["AvailabilityZone"]
+      @availabilityzone=hwcloud_properties["availability_zone"]
      # require "huaweicloud"
       @hwcloudsdk = HwCloud::HwCloudSdk.new(hwcloud_params)
 

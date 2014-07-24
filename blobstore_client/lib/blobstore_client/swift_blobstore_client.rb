@@ -129,6 +129,18 @@ module Bosh
             raise 'HP secret key is missing' unless options[:hp].has_key?(:hp_secret_key)
             raise 'HP tenant ID is missing' unless options[:hp].has_key?(:hp_tenant_id)
             raise 'HP availability zone is missing' unless options[:hp].has_key?(:hp_avl_zone)
+          when 'hwcloud'
+            raise 'HwCloud options are missing' unless options.has_key?(:hwcloud)
+            raise "Invalid HwCloud options, Hash expected, #{options[:hwcloud].class} given" unless options[:hwcloud].is_a?(Hash)
+            raise 'HwCloud url is missing' unless options[:hwcloud].has_key?(:hwcloud_url)   
+            raise 'HwCloud access key id is missing' unless options[:hwcloud].has_key?(:hwcloud_access_key_id)
+            raise 'HwCloud secret access key is missing' unless options[:hwcloud].has_key?(:hwcloud_key)
+            raise 'HwCloud url is missing' unless options[:hwcloud].has_key?(:hwcloud_signature_method)
+            raise 'HwCloud url is missing' unless options[:hwcloud].has_key?(:hwcloud_signature_nonce)
+            raise 'HwCloud url is missing' unless options[:hwcloud].has_key?(:hwcloud_signature_version) 	     	       
+            raise 'HwCloud access key id is missing' unless options[:hwcloud].has_key?(:hwcloud_version)
+            raise 'HwCloud secret access key is missing' unless options[:hwcloud].has_key?(:hwcloud_region_name)
+            raise 'HwCloud access key id is missing' unless options[:hwcloud].has_key?(:hwcloud_availability_zone)                      
           when 'openstack'
             raise 'OpenStack options are missing' unless options.has_key?(:openstack)
             raise "Invalid OpenStack options, Hash expected, #{options[:openstack].class} given" unless options[:openstack].is_a?(Hash)

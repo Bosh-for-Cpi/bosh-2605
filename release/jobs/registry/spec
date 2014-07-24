@@ -54,6 +54,28 @@ properties:
     description: Max number of retries to connect to AWS
     default: 2
 
+  # For HwCloud
+  hwcloud.url:
+    description: HwCloud url 
+  hwcloud.access_key_id:
+    description: HwCloud access key id
+  hwcloud.key:
+    description: HwCloud key
+  hwcloud.signature_method:
+    description: HwCloud signature method 
+  hwcloud.signature_nonce:
+    description: HwCloud signature nonce
+  hwcloud.signature_version:
+    description: HwCloud signature version
+  hwcloud.version:
+    description: HwCloud version 
+  hwcloud.region_name:
+    description: HwCloud region name
+  hwcloud.availability_zone:
+    description: HwCloud availability zone 
+  hwcloud.connection_options:
+    description: Hash containing optional connection parameters to the HwCloud API
+
   # For OpenStack
   openstack.auth_url:
     description: URL of the OpenStack Identity endpoint to connect to

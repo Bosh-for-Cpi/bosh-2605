@@ -157,6 +157,26 @@ compiled_package_cache:
       hp_tenant_id: <%= hp_tenant_id %>
       hp_avl_zone: <%= hp_avl_zone %>
     <% end %>
+    <% if_p('compiled_package_cache.options.hwcloud_url',
+            'compiled_package_cache.options.hwcloud_access_key_id',
+            'compiled_package_cache.options.hwcloud_key',
+	    'compiled_package_cache.options.hwcloud_signature_method',
+	    'compiled_package_cache.options.hwcloud_signature_nonce',
+	    'compiled_package_cache.options.hwcloud_signature_version',
+	    'compiled_package_cache.options.hwcloud_version',
+	    'compiled_package_cache.options.hwcloud_region_name',
+	    'compiled_package_cache.options.hwcloud_availability_zone') do |hwcloud_url, hwcloud_access_key_id, hwcloud_key, hwcloud_signature_method, hwcloud_signature_nonce, hwcloud_signature_version, hwcloud_version, hwcloud_region_name, hwcloud_availability_zone| %>
+    hwcloud:
+      hwcloud_url: <%= hwcloud_url %>
+      hwcloud_access_key_id: <%= hwcloud_access_key_id %>
+      hwcloud_key: <%= hwcloud_key %>
+      hwcloud_signature_method: <%= hwcloud_signature_method %>
+      hwcloud_signature_nonce: <%= hwcloud_signature_nonce %>
+      hwcloud_signature_version: <%= hwcloud_signature_version %>
+      hwcloud_version: <%= hwcloud_version %>
+      hwcloud_region_name: <%= hwcloud_region_name %>
+      hwcloud_availability_zone: <%= hwcloud_availability_zone %>
+    <% end %>    
     <% if_p('compiled_package_cache.options.openstack_auth_url',
             'compiled_package_cache.options.openstack_username',
             'compiled_package_cache.options.openstack_api_key',
@@ -226,6 +246,44 @@ cloud:
     stemcell:
       kernel_id: <%= kernel_id %>
     <% end %>
+<% end %>
+
+<% if_p('hwcloud.url', 'hwcloud.access_key_id', 'hwcloud.key', 'hwcloud.signature_method', 
+'hwcloud.signature_nonce', 'hwcloud.signature_version', 'hwcloud.version', 
+'hwcloud.region_name', 'hwcloud.availability_zone',  'hwcloud.default_security_groups',
+'hwcloud.wait_resource_poll_interval', 'registry.address', 'registry.http.port', 'registry.http.user',
+        'registry.http.password') do |url, access_key_id, key, signature_method, signature_nonce, 
+                                  signature_version, version, region_name, availability_zone, default_key_name, default_security_groups, wait_resource_poll_interval, reg_address,reg_port, reg_user, reg_password| %>
+  plugin: hwcloud <% plugin = "hwcloud" %>
+  properties:
+    hwcloud:
+      url: <%= url %>
+      access_key_id: <%= access_key_id %>
+      key: <%= key %>
+      signature_method: <%= signature_method %>
+      signature_nonce: <%= signature_nonce %>
+      signature_version: <%= signature_version %>
+      version: <%= version %>
+      region_name: <%= region_name %>
+      availability_zone: <%= availability_zone %>
+      <% if_p("hwcloud.state_timeout") do |state_timeout| %>
+      state_timeout: <%= state_timeout %>
+      <% end %>
+      <% if_p("hwcloud.stemcell_public_visibility") do |stemcell_public_visibility| %>
+      stemcell_public_visibility: <%= stemcell_public_visibility %>
+      <% end %>
+      <% if_p('hwcloud.connection_options') do |connection_options| %>
+      connection_options: <%= JSON.generate(connection_options) %>
+      <% end %>
+      <% if_p("hwcloud.boot_from_volume") do |boot_from_volume| %>
+      boot_from_volume: <%= boot_from_volume %>
+      <% end %>
+      default_security_groups: <%= default_security_groups %>
+      wait_resource_poll_interval: <%= wait_resource_poll_interval %>
+    registry:
+      endpoint: http://<%= reg_address %>:<%= reg_port %>
+      user: <%= reg_user %>
+      password: <%= reg_password %>
 <% end %>
 
 <% if_p('openstack.auth_url', 'openstack.username', 'openstack.api_key',

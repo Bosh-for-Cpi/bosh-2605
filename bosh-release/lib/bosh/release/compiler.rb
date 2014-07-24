@@ -156,6 +156,8 @@ module Bosh
           spec["networks"] = {"local" => {"ip" => "127.0.0.1"}}
         when "aws"
           spec["networks"] = {"type" => "dynamic"}
+        when "hwcloud"
+          spec["networks"] = {"type" => "dynamic"}          
         when "openstack"
           spec["networks"] = {"type" => "dynamic"}
         when "qingcloud"

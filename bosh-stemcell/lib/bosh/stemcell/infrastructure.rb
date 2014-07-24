@@ -2,6 +2,8 @@ module Bosh::Stemcell
   module Infrastructure
     def self.for(name)
       case name
+        when 'hwcloud'
+          HwCloud.new        
         when 'openstack'
           OpenStack.new
         when 'qingcloud'
@@ -46,6 +48,12 @@ module Bosh::Stemcell
     class NullInfrastructure < Base
       def initialize
         super(name: 'null', hypervisor: 'null', default_disk_size: -1)
+      end
+    end
+
+    class HwCloud < Base
+      def initialize
+        super(name: 'hwcloud', hypervisor: 'kvm', default_disk_size: 10240)
       end
     end
 
