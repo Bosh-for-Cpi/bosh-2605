@@ -194,9 +194,9 @@ module Bosh::HwCloud
         volume_info = @hwcloudsdk.create_volume(volume_params)
         cloud_error("HwCloud CPI Create Volume Failed") unless /vol-[A-Za-z0-9]{8}/.match(volume_info["volumeId"])     
         wait_resource(volume_info["volumeId"], "available", method(:get_disk_status))
-        puts volume_info["volumes"]
+        puts volume_info["volumeId"]
 
-        volume_info["volumes"]
+        volume_info["volumeId"]
       end
     end
 
@@ -217,12 +217,9 @@ module Bosh::HwCloud
 
         state = get_disk_status(disk_id)
         if state  != "noexist"
-          if  state != "available"
-            cloud_error("Cannot delete volume `#{disk_id}', state is #{state}")
-          end
-          options={
-            :'VolumeId[0]'          => "#{disk_id}",
-          }
+          cloud_error("Cannot delete volume `#{disk_id}', state is #{state}") unless state == 'available'
+
+          options={:'VolumeId[0]' => "#{disk_id}"}
           ret = @hwcloudsdk.delete_volume(options)
           wait_resource(disk_id, "noexist", method(:get_disk_status))
         else
@@ -236,13 +233,15 @@ module Bosh::HwCloud
     # @param [String] disk_id EBS volume id of the disk to attach
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id}, #{disk_id})") do
+       
         instance = has_vm?(instance_id)
         cloud_error("Instance `#{instance_id}' not found") unless instance
 
-        ret_info = get_disks(disk_id)
-        cloud_error("Volume `#{disk_id}' not found") unless ret_info["volumeSet"]
 
-        disk_name=  ret_info["volumeSet"]["volumeSet"][0]["volumeName"]
+        ret_info = get_disks(disk_id)
+        disk = has_disk?(ret_info)
+        cloud_error("Volume `#{disk_id}' not found") unless disk
+
         device_name = attach_volume(ret_info, instance_id)
 
         update_agent_settings(instance_id) do |settings|
@@ -250,10 +249,7 @@ module Bosh::HwCloud
           settings["disks"]["persistent"] ||= {}
           settings["disks"]["persistent"][disk_id] = device_name
         end
-
         logger.info("Attached `#{disk_id}' to `#{instance_id}'")
-
-        disk_name
       end
     end
 
@@ -272,14 +268,16 @@ module Bosh::HwCloud
         cloud_error("Instance `#{instance_id}' is not attach to #{disk_id}") unless instance_disk_id == instance_id
       end
 
-      cloud_error('Disk is in use') if disk_status != "available"
-
-      options={
-        :VolumeId   => "#{disk_id}",
-        :InstanceId => "#{instance_id}"
-      }
-      attachment = @hwcloudsdk.attach_volume(options)
-      wait_resource(disk_id, "in-use", method(:get_disk_status))
+      if disk_status == "in-use"
+        options={
+          :VolumeId   => "#{disk_id}",
+          :InstanceId => "#{instance_id}"
+        }
+        attachment = @hwcloudsdk.attach_volume(options)
+        wait_resource(disk_id, "in-use", method(:get_disk_status))
+      else
+        @logger.info("Disk `#{disk_id}' is already attached to server `#{instance_id}'. Skipping.")
+      end
 
       ret_info = get_disks(disk_id)
       ret_info["volumeSet"]["volumeSet"][0]["attachmentSet"]["attachmentSet"] [0]["device"]
@@ -294,12 +292,10 @@ module Bosh::HwCloud
         cloud_error("Instance `#{instance_id}' not found") unless instance
 
         ret_info = get_disks(disk_id)
-        cloud_error("Volume `#{disk_id}' not found") unless ret_info["volumeSet"]
+        disk = has_disk?(ret_info)
+        cloud_error("Volume `#{disk_id}' not found") unless disk
 
         disk_instance_id = ret_info["volumeSet"]["volumeSet"][0]["attachmentSet"]["attachmentSet"][0]["instanceId"]
-        puts disk_instance_id
-        puts instance_id
-        puts ret_info 
         if disk_instance_id == instance_id
 
           options={:VolumeId   => "#{disk_id}",
@@ -342,19 +338,27 @@ module Bosh::HwCloud
     end
 
 
-    def get_disk_status(volume_id)
-      with_thread_name("get_disk_status(#{volume_id})") do
-        ret_info = get_disks(volume_id)
+    def analyse_disk_state(disk_info) 
+      if disk_info["volumeSet"] == nil || disk_info["volumeSet"]["volumeSet"].empty?
+         state = "noexist" 
+      else 
+         state = disk_info["volumeSet"]["volumeSet"][0]["status"] 
+      end
+    end	
+
+    def get_disk_status(disk_id)
+      with_thread_name("get_disk_status(#{disk_id})") do
+        ret_info = get_disks(disk_id)
         puts ret_info
-        if  ret_info["volumeSet"] == nil || ret_info["volumeSet"]["volumeSet"].empty?
-            state = "noexist" 
-        else 
-          state = ret_info["volumeSet"]["volumeSet"][0]["status"] 
-        end
-        return state
+        return analyse_disk_state(ret_info)
       end
     end
 
+    def has_disk?(disk_info)
+      state = analyse_disk_state(disk_info)
+      return false if state == 'noexist'
+      true
+    end
 
     # Take snapshot of disk
     # @param [String] disk_id disk id of the disk to take the snapshot of
