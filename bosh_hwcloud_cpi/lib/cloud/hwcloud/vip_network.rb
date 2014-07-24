@@ -19,17 +19,17 @@ module Bosh::HwCloud
     # @param [HwCloud:EC2] ec2 EC2 client
     # @param [HwCloud::EC2::Instance] instance EC2 instance to configure
     def configure(hwcloud, instance)
-      if @ip.nil
+      if @ip == ""
         cloud_error("No IP provided for vip network `#{@name}'")
       end
 
-      instance_id = instance["instance_set"]["instancesSet"][0]["instanceId"]
+      instance_id = instance["instancesSet"]["instancesSet"][0]["instanceId"]
 
       options={
        :'PublicIp[0]' => @ip,
       }
 
-      address_info = @hwcloudsdk.describe_addresses(options)
+      address_info = hwcloud.describe_addresses(options)
       if address_info["addressesSet"] == 'null'
         cloud_error("Floating IP #{@ip} not allocated")
       else
@@ -43,7 +43,7 @@ module Bosh::HwCloud
             :Reverse => true
           }
 
-          ret = @hwcloudsdk.associate_address(options_param)
+          ret = hwcloud.associate_address(options_param)
 
         elsif address_info["addressesSet"]["addressesSet"][0]["isAssige"] == "associated"       
            cloud_error("Floating IP #{@ip} has been used")
