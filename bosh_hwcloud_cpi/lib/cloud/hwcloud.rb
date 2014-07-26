@@ -10,7 +10,6 @@ require "set"
 require "tmpdir"
 require "securerandom"
 require "yajl"
-require 'rubypython'
 require 'hwcloud-sdk'
 
 require "common/exec"
