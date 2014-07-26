@@ -22,6 +22,8 @@ module Bosh::Agent
           setup_dhcp_from_settings
         when "qingcloud"
           setup_dhcp_from_settings
+        when "hwcloud"
+          setup_dhcp_from_settings
         else
           raise Bosh::Agent::FatalError, "Setup networking failed, unsupported infrastructure #{Bosh::Agent::Config.infrastructure_name}"
       end

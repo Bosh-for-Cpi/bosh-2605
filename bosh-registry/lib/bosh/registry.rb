@@ -14,6 +14,7 @@ require "sinatra/base"
 require "thin"
 require "yajl"
 require "rubypython"
+require  "hwcloud-sdk"
 
 require "bosh/registry/yaml_helper"
 
