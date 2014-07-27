@@ -55,7 +55,7 @@ module Bosh::HwCloud
     ##
     # Applies network configuration to the vm
     #
-    # @param [Bosh::HwCloud::QingCloudSDK] hwcloud qingcloudsdk interface
+    # @param [Bosh::HwCloud::HwCloudSDK] hwcloud hwcloudsdk interface
     # @param [Hash] server hwcloud instances to
     #   configure
     def configure(hwcloud, instance)

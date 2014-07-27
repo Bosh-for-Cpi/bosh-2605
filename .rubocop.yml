@@ -10,6 +10,7 @@ AllCops:
     - bosh_cli_plugin_aws/**
     - bosh_common/**
     - bosh_cpi/**
+    - bosh_hwcloud_cpi/**    
     - bosh_openstack_cpi/**
     - bosh_qingcloud_cpi/**
     - bosh-registry/**

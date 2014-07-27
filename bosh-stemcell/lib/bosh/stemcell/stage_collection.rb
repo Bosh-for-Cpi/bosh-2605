@@ -46,6 +46,8 @@ module Bosh::Stemcell
       case infrastructure
       when Infrastructure::Aws then
         aws_stages
+      when Infrastructure::HwCloud then
+        hwcloud_stages        
       when Infrastructure::OpenStack then
         openstack_stages
       when Infrastructure::QingCloud then
@@ -56,6 +58,14 @@ module Bosh::Stemcell
         vcloud_stages
       when Infrastructure::Warden then
         warden_stages
+      end
+    end
+
+    def hwcloud_stages
+      if operating_system.instance_of?(OperatingSystem::Centos)
+        centos_hwcloud_stages
+      else
+        default_hwcloud_stages
       end
     end
 
@@ -156,6 +166,24 @@ module Bosh::Stemcell
       ]
     end
 
+    def centos_hwcloud_stages
+      [
+        # Misc
+        :system_hwcloud_network_centos,
+        :system_parameters,
+        # Finalisation,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_hwcloud_qcow2,
+        :image_hwcloud_prepare_stemcell,
+        # Final stemcell
+        :stemcell_hwcloud,
+      ]
+    end
+
     def centos_openstack_stages
       [
         # Misc
@@ -209,6 +237,27 @@ module Bosh::Stemcell
         :image_aws_prepare_stemcell,
         # Final stemcell
         :stemcell,
+      ]
+    end
+
+    def default_hwcloud_stages
+      [
+        # Misc
+        :system_hwcloud_network,
+        :system_hwcloud_clock,
+        :system_hwcloud_modules,
+        :system_parameters,
+        # Finalisation,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        # Image/bootloader
+        :image_create,
+        :image_install_grub,
+        :image_hwcloud_qcow2,
+        :image_hwcloud_prepare_stemcell,
+        # Final stemcell
+        :stemcell_hwcloud,
       ]
     end
 

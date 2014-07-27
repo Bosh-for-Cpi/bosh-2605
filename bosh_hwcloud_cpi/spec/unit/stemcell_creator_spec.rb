@@ -112,7 +112,7 @@ describe Bosh::HwCloud::StemcellCreator do
       creator.stub(:find_in_path => nil)
       result = double('result', :output => 'output')
 
-      stemcell_copy = File.expand_path("../../../../bosh_qingcloud_cpi/scripts/stemcell-copy.sh", __FILE__)
+      stemcell_copy = File.expand_path("../../../../bosh_hwcloud_cpi/scripts/stemcell-copy.sh", __FILE__)
       cmd = "sudo -n #{stemcell_copy} /path/to/image /dev/volume 2>&1"
       creator.should_receive(:sh).with(cmd).and_return(result)
 

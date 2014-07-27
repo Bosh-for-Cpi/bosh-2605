@@ -25,7 +25,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'bosh_common',   "~>#{version}"
   s.add_dependency 'bosh_cpi',      "~>#{version}"
   s.add_dependency 'bosh-registry', "~>#{version}"
-  s.add_dependency 'rubypython',    '=0.6.3'
   s.add_dependency 'httpclient',    '=2.2.4'
   s.add_dependency 'yajl-ruby',     '>=0.8.2'
 end

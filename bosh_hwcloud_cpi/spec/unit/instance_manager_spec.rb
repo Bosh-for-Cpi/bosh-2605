@@ -8,35 +8,35 @@ describe Bosh::HwCloud::InstanceManager do
     let(:instance_id) { "instance id" }
     let(:availability_zone_selector) { double(Bosh::HwCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
 
-    let(:fake_qingcloud_instance) { double("qingcloud_instance", id: instance_id) }
+    let(:fake_hwcloud_instance) { double("hwcloud_instance", id: instance_id) }
     let(:instance_manager) { described_class.new(region, registry, availability_zone_selector) }
 
     before do
-      region.stub_chain(:instances, :[]).with(instance_id).and_return(fake_qingcloud_instance)
+      region.stub_chain(:instances, :[]).with(instance_id).and_return(fake_hwcloud_instance)
     end
 
     it "returns false if instance does not exist" do
-      expect(fake_qingcloud_instance).to receive(:exists?).and_return(false)
+      expect(fake_qhwcloud_instance).to receive(:exists?).and_return(false)
       expect(instance_manager.has_instance?(instance_id)).to be(false)
     end
 
     it "returns true if instance does exist" do
-      expect(fake_qingcloud_instance).to receive(:exists?).and_return(true)
-      expect(fake_qingcloud_instance).to receive(:status).and_return(:running)
+      expect(fake_hwcloud_instance).to receive(:exists?).and_return(true)
+      expect(fake_hwcloud_instance).to receive(:status).and_return(:running)
       expect(instance_manager.has_instance?(instance_id)).to be(true)
     end
 
     it "returns false if instance exists but is terminated" do
-      expect(fake_qingcloud_instance).to receive(:exists?).and_return(true)
-      expect(fake_qingcloud_instance).to receive(:status).and_return(:terminated)
+      expect(fake_hwcloud_instance).to receive(:exists?).and_return(true)
+      expect(fake_hwcloud_instance).to receive(:status).and_return(:terminated)
       expect(instance_manager.has_instance?(instance_id)).to be(false)
     end
   end
 
   describe "#create" do
     let(:availability_zone_selector) { double(Bosh::HwCloud::AvailabilityZoneSelector, common_availability_zone: "us-east-1a") }
-    let(:fake_qingcloud_subnet) { double(HwCloud::EC2::Subnet).as_null_object }
-    let(:qingcloud_instance_params) do
+    let(:fake_hwcloud_subnet) { double(HwCloud::EC2::Subnet).as_null_object }
+    let(:hwcloud_instance_params) do
       {
           count: 1,
           image_id: "stemcell-id",
@@ -44,20 +44,20 @@ describe Bosh::HwCloud::InstanceManager do
           user_data: "{\"registry\":{\"endpoint\":\"http://...\"},\"dns\":{\"nameserver\":\"foo\"}}",
           key_name: "bar",
           security_groups: ["baz"],
-          subnet: fake_qingcloud_subnet,
+          subnet: fake_hwcloud_subnet,
           private_ip_address: "1.2.3.4",
           availability_zone: "us-east-1a"
       }
     end
-    let(:qingcloud_instances) { double(HwCloud::EC2::InstanceCollection) }
+    let(:hwcloud_instances) { double(HwCloud::EC2::InstanceCollection) }
     let(:instance) { double(HwCloud::EC2::Instance, id: 'i-12345678') }
-    let(:qingcloud_client) { double(HwCloud::EC2::Client) }
+    let(:hwcloud_client) { double(HwCloud::EC2::Client) }
 
     it "should ask HwCloud to create an instance in the given region, with parameters built up from the given arguments" do
-      allow(region).to receive(:instances).and_return(qingcloud_instances)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
+      allow(region).to receive(:instances).and_return(hwcloud_instances)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_hwcloud_subnet})
 
-      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_return(instance)
+      expect(hwcloud_instances).to receive(:create).with(hwcloud_instance_params).and_return(instance)
       allow(Bosh::HwCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
 
       instance_manager = described_class.new(region, registry, availability_zone_selector)
@@ -84,8 +84,8 @@ describe Bosh::HwCloud::InstanceManager do
     end
 
     it "should ask HwCloud to create a SPOT instance in the given region, when resource_pool includes spot_bid_price" do
-      allow(region).to receive(:client).and_return(qingcloud_client)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
+      allow(region).to receive(:client).and_return(hwcloud_client)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_hwcloud_subnet})
       allow(region).to receive(:instances).and_return( {'i-12345678' => instance } )
 
       #need to translate security group names to security group ids
@@ -115,10 +115,10 @@ describe Bosh::HwCloud::InstanceManager do
       resource_pool = {"spot_bid_price"=>0.15, "instance_type" => "m1.small", "key_name" => "bar"}
 
       #Should not recieve an ondemand instance create call
-      expect(qingcloud_instances).to_not receive(:create).with(qingcloud_instance_params)
+      expect(hwcloud_instances).to_not receive(:create).with(hwcloud_instance_params)
 
       #Should rather recieve a spot instance request
-      expect(qingcloud_client).to receive(:request_spot_instances) do |spot_request|
+      expect(hwcloud_client).to receive(:request_spot_instances) do |spot_request|
         expect(spot_request[:spot_price]).to eq("0.15")
         expect(spot_request[:instance_count]).to eq(1)
         #expect(spot_request[:valid_until]).to  #TODO - not sure how to test this
@@ -129,7 +129,7 @@ describe Bosh::HwCloud::InstanceManager do
           :user_data=>Base64.encode64("{\"registry\":{\"endpoint\":\"http://...\"},\"dns\":{\"nameserver\":\"foo\"}}"),
           :placement=> { :availability_zone=>"us-east-1a" }, 
           :network_interfaces=>[ { 
-            :subnet_id=>fake_qingcloud_subnet,
+            :subnet_id=>fake_hwcloud_subnet,
             :groups=>["sg-baz-1234"], 
             :device_index=>0, 
             :private_ip_address=>"1.2.3.4"
@@ -144,7 +144,7 @@ describe Bosh::HwCloud::InstanceManager do
       end
 
       # Should poll the spot instance request until state is active
-      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
+      expect(hwcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
         .and_return({ :spot_instance_request_set => [ {:state => "active", :instance_id=>"i-12345678"} ] })
        
@@ -163,14 +163,14 @@ describe Bosh::HwCloud::InstanceManager do
         :request_id => "request-id-12345"
       }
       
-      allow(region).to receive(:client).and_return(qingcloud_client)
+      allow(region).to receive(:client).and_return(hwcloud_client)
       allow(region).to receive(:instances).and_return( {'i-12345678' => instance } )
 
       #Simulate first recieving an error when asking for spot request state
-      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
+      expect(hwcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
         .and_raise(HwCloud::EC2::Errors::InvalidSpotInstanceRequestID::NotFound)
-      expect(qingcloud_client).to receive(:describe_spot_instance_requests) \
+      expect(hwcloud_client).to receive(:describe_spot_instance_requests) \
         .with({:spot_instance_request_ids=>["sir-12345c"]}) \
         .and_return({ :spot_instance_request_set => [ {:state => "active", :instance_id=>"i-12345678"} ] })
 
@@ -182,11 +182,11 @@ describe Bosh::HwCloud::InstanceManager do
     end
 
     it "should retry creating the VM when HwCloud::EC2::Errors::InvalidIPAddress::InUse raised" do
-      allow(region).to receive(:instances).and_return(qingcloud_instances)
-      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
+      allow(region).to receive(:instances).and_return(hwcloud_instances)
+      allow(region).to receive(:subnets).and_return({"sub-123456" => fake_hwcloud_subnet})
 
-      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_raise(HwCloud::EC2::Errors::InvalidIPAddress::InUse)
-      expect(qingcloud_instances).to receive(:create).with(qingcloud_instance_params).and_return(instance)
+      expect(hwcloud_instances).to receive(:create).with(hwcloud_instance_params).and_raise(HwCloud::EC2::Errors::InvalidIPAddress::InUse)
+      expect(hwcloud_instances).to receive(:create).with(hwcloud_instance_params).and_return(instance)
       allow(Bosh::HwCloud::ResourceWait).to receive(:for_instance).with(instance: instance, state: :running)
       
       instance_manager = described_class.new(region, registry, availability_zone_selector)
@@ -266,10 +266,10 @@ describe Bosh::HwCloud::InstanceManager do
     end
 
     describe "#set_vpc_parameters" do
-      let(:fake_qingcloud_subnet) { double("qingcloud_subnet") }
+      let(:fake_hwcloud_subnet) { double("hwcloud_subnet") }
 
       before do
-        allow(region).to receive(:subnets).and_return({"sub-123456" => fake_qingcloud_subnet})
+        allow(region).to receive(:subnets).and_return({"sub-123456" => fake_hwcloud_subnet})
       end
 
       context "when there is not a manual network in the specs" do
@@ -463,17 +463,17 @@ describe Bosh::HwCloud::InstanceManager do
 
   describe "#terminate" do
     let(:instance_id) { "i-123456" }
-    let(:fake_qingcloud_instance) { double("qingcloud_instance", id: instance_id) }
+    let(:fake_hwcloud_instance) { double("hwcloud_instance", id: instance_id) }
     let(:instance_manager) { described_class.new(region, registry) }
 
     it "should terminate an instance given the id" do
       allow(instance_manager).to receive(:remove_from_load_balancers)
 
-      expect(fake_qingcloud_instance).to receive(:terminate)
+      expect(fake_hwcloud_instance).to receive(:terminate)
       expect(registry).to receive(:delete_settings).with(instance_id)
 
-      allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
-      allow(Bosh::HwCloud::ResourceWait).to receive(:for_instance).with(instance: fake_qingcloud_instance, state: :terminated)
+      allow(region).to receive(:instances).and_return({instance_id => fake_hwcloud_instance})
+      allow(Bosh::HwCloud::ResourceWait).to receive(:for_instance).with(instance: fake_hwcloud_instance, state: :terminated)
 
       instance_manager.terminate(instance_id)
     end
@@ -481,11 +481,11 @@ describe Bosh::HwCloud::InstanceManager do
     context "when instance was deleted in HwCloud and no longer exists (showing in HwCloud console)" do
       before do
         # HwCloud SDK always returns an object even if instance no longer exists
-        allow(region).to receive(:instances).with(no_args).and_return({instance_id => fake_qingcloud_instance})
+        allow(region).to receive(:instances).with(no_args).and_return({instance_id => fake_hwcloud_instance})
 
         # HwCloud returns NotFound error if instance no longer exists in HwCloud console
         # (This could happen when instance was deleted manually and BOSH is not aware of that)
-        allow(fake_qingcloud_instance).to receive(:terminate).
+        allow(fake_hwcloud_instance).to receive(:terminate).
           with(no_args).and_raise(HwCloud::EC2::Errors::InvalidInstanceID::NotFound)
       end
 
@@ -504,12 +504,12 @@ describe Bosh::HwCloud::InstanceManager do
       it "should do a fast path delete when requested" do
         allow(instance_manager).to receive(:remove_from_load_balancers)
 
-        allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
-        allow(fake_qingcloud_instance).to receive(:terminate)
+        allow(region).to receive(:instances).and_return({instance_id => fake_hwcloud_instance})
+        allow(fake_hwcloud_instance).to receive(:terminate)
         allow(registry).to receive(:delete_settings)
 
-        allow(Bosh::HwCloud::ResourceWait).to receive(:for_volume).with(instrance: fake_qingcloud_instance, state: :terminated)
-        expect(Bosh::HwCloud::TagManager).to receive(:tag).with(fake_qingcloud_instance, "Name", "to be deleted")
+        allow(Bosh::HwCloud::ResourceWait).to receive(:for_volume).with(instrance: fake_hwcloud_instance, state: :terminated)
+        expect(Bosh::HwCloud::TagManager).to receive(:tag).with(fake_hwcloud_instance, "Name", "to be deleted")
 
         instance_manager.terminate(instance_id, true)
       end
@@ -518,14 +518,14 @@ describe Bosh::HwCloud::InstanceManager do
 end
 
   describe "#reboot" do
-    let(:fake_qingcloud_instance) { double("qingcloud_instance") }
+    let(:fake_hwcloud_instance) { double("hwcloud_instance") }
     let(:instance_id) { "i-123456" }
     let(:instance_manager) { described_class.new(region, registry) }
 
     it "should reboot the instance" do
-      expect(fake_qingcloud_instance).to receive(:reboot)
+      expect(fake_hwcloud_instance).to receive(:reboot)
 
-      allow(region).to receive(:instances).and_return({instance_id => fake_qingcloud_instance})
+      allow(region).to receive(:instances).and_return({instance_id => fake_hwcloud_instance})
 
       instance_manager.reboot(instance_id)
     end

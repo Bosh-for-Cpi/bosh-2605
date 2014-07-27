@@ -6,9 +6,9 @@ require 'cloud'
 
 describe Bosh::HwCloud::Cloud do
   before(:all) do
-    @access_key_id     = ENV['BOSH_QingCloud_ACCESS_KEY_ID']     || raise("Missing BOSH_QingCloud_ACCESS_KEY_ID")
-    @secret_access_key = ENV['BOSH_QingCloud_SECRET_ACCESS_KEY'] || raise("Missing BOSH_QingCloud_SECRET_ACCESS_KEY")
-    @subnet_id         = ENV['BOSH_QingCloud_SUBNET_ID']         || raise("Missing BOSH_QingCloud_SUBNET_ID")
+    @access_key_id     = ENV['BOSH_HwCloud_ACCESS_KEY_ID']     || raise("Missing BOSH_HwCloud_ACCESS_KEY_ID")
+    @secret_access_key = ENV['BOSH_HwCloud_SECRET_ACCESS_KEY'] || raise("Missing BOSH_HwCloud_SECRET_ACCESS_KEY")
+    @subnet_id         = ENV['BOSH_HwCloud_SUBNET_ID']         || raise("Missing BOSH_HwCloud_SUBNET_ID")
   end
 
   before { Bosh::Registry::Client.stub(new: double('registry').as_null_object) }

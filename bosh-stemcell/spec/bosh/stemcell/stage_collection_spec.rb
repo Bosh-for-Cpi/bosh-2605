@@ -66,6 +66,38 @@ module Bosh::Stemcell
       ]
     }
 
+    let(:hwcloud_ubuntu_infrastructure_stages) {
+      [
+        :system_hwcloud_network,
+        :system_hwcloud_clock,
+        :system_hwcloud_modules,
+        :system_parameters,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_hwcloud_qcow2,
+        :image_hwcloud_prepare_stemcell,
+        :stemcell_hwcloud
+      ]
+    }
+
+    let(:hwcloud_centos_infrastructure_stages) {
+      [
+        :system_hwcloud_network_centos,
+        :system_parameters,
+        :bosh_clean,
+        :bosh_harden,
+        :bosh_harden_ssh,
+        :image_create,
+        :image_install_grub,
+        :image_hwcloud_qcow2,
+        :image_hwcloud_prepare_stemcell,
+        :stemcell_hwcloud
+      ]
+    }
+
     let(:openstack_ubuntu_infrastructure_stages) {
       [
         :system_openstack_network,

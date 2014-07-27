@@ -40,6 +40,15 @@ func NewProvider(logger boshlog.Logger, platform boshplatform.Platform) (p Provi
 		logger,
 	)
 
+	hwcloudInfrastructure := NewHwcloudInfrastructure(
+		metadataService,
+		hwcloudRegistry,
+		platform,
+		mappedDevicePathResolver,
+		logger,
+	)
+
+
 	openstackInfrastructure := NewOpenstackInfrastructure(
 		metadataService,
 		openstackRegistry,
@@ -58,6 +67,7 @@ func NewProvider(logger boshlog.Logger, platform boshplatform.Platform) (p Provi
 
 	p.infrastructures = map[string]Infrastructure{
 		"aws":       awsInfrastructure,
+		"hwcloud":   hwcloudInfrastructure,		
 		"openstack": openstackInfrastructure,
 		"qingcloud": qingcloudInfrastructure,
 		"dummy":     NewDummyInfrastructure(fs, dirProvider, platform, dummyDevicePathResolver),

@@ -14,14 +14,15 @@ module Bosh::Registry
         @hwcloud_properties = cloud_config['hwcloud']
 
         @hwcloud_options = {
-          :url =>            hwcloud_properties['url'],
-          :HWSAccessKeyId =>            hwcloud_properties['access_key_id'],
-          :Version=>     hwcloud_properties['version'],
-          :SignatureMethod=> hwcloud_properties['signature_method'],
-          :SignatureNonce=> hwcloud_properties['signature_nonce'],
-          :SignatureVersion=> hwcloud_properties['signature_version'],
-          :RegionName=> hwcloud_properties['region_name'],
-          :Key=> hwcloud_properties['key']
+	  :provider => 'HwCloud',
+          :url => @hwcloud_properties['url'],
+          :HWSAccessKeyId => @hwcloud_properties['access_key_id'],
+          :Version =>  @hwcloud_properties['version'],
+          :SignatureMethod => @hwcloud_properties['signature_method'],
+          :SignatureNonce => @hwcloud_properties['signature_nonce'],
+          :SignatureVersion => @hwcloud_properties['signature_version'],
+          :RegionName => @hwcloud_properties['region_name'],
+          :Key => @hwcloud_properties['key']
         }
       end
 
@@ -47,7 +48,7 @@ module Bosh::Registry
 
       # Get the list of IPs belonging to this instance
       def instance_ips(instance_id)
-        # If we get an Unauthorized error, it could mean that the QingCloud auth token has expired, so we are
+        # If we get an Unauthorized error, it could mean that the HwCloud auth token has expired, so we are
         # going renew the fog connection one time to make sure that we get a new non-expired token.
         retried = false
         begin
@@ -61,11 +62,11 @@ module Bosh::Registry
             @hwcloud = nil
             retry
           end
-          raise ConnectionError, "Unable to connect to QingCloud API: #{e.message}"
+          raise ConnectionError, "Unable to connect to HwCloud API: #{e.message}"
         end
-        raise InstanceNotFound, "Instance `#{instance_id}' not found   #{instance}" if  instance["instancesSet"].nil?
-        private_ip_addresses = ""  # instance["instance_set"][0]["vxnets"][0]["private_ip"]
-        floating_ip_addresses = ""  # instance["instance_set"][0]["eip"]["eip_addr"]
+        raise InstanceNotFound, "Instance `#{instance_id}' not found" if  instance["instancesSet"].nil?
+        private_ip_addresses = ""
+        floating_ip_addresses = ""
         return (private_ip_addresses + floating_ip_addresses).compact
       end
 

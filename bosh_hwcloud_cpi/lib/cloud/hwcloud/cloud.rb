@@ -27,7 +27,6 @@ module Bosh::HwCloud
     # @option options [Hash] agent agent options
     # @option options [Hash] registry agent options
 
-#by zxy
     def initialize(options)
       @options = options.dup.freeze
       validate_options
@@ -35,7 +34,7 @@ module Bosh::HwCloud
       @logger = Bosh::Clouds::Config.logger
 
       initialize_hwcloud
-#      initialize_registry
+      initialize_registry
 
       @metadata_lock = Mutex.new
     end
@@ -76,77 +75,77 @@ module Bosh::HwCloud
       SecureRandom.uuid
     end
     
-  def create_vm(agent_id, stemcell_id, resource_pool, network_spec, disk_locality = nil, environment = nil)
-    with_thread_name("create_vm(#{agent_id}, ...)") do 
-      @logger.info('Creating new server...')
-      server_name = "vm-#{generate_unique_name}"
-    
-      #network
-      network_configurator = NetworkConfigurator.new(network_spec)
-      security_groups = network_configurator.security_groups(nil)
-      @logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
+    def create_vm(agent_id, stemcell_id, resource_pool, network_spec, disk_locality = nil, environment = nil)
+      with_thread_name("create_vm(#{agent_id}, ...)") do 
+        @logger.info('Creating new server...')
+        server_name = "vm-#{generate_unique_name}"
+      
+        #network
+        network_configurator = NetworkConfigurator.new(network_spec)
+        security_groups = network_configurator.security_groups(nil)
+        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
 
 
-      #check image exists
-      image_options = {
-            :'Filter[0].Name' => 'imageID',
-            :'Filter[0].Value[0]' => "#{stemcell_id}",
-      }
-      image = @hwcloudsdk.describe_images_by_name(image_options)
-      cloud_error("Image `#{stemcell_id}' not found") if image["imageSet"]["imageSet"].empty?
-      @logger.debug("Using image: `#{stemcell_id}'")
+        #check image exists
+        image_options = {
+              :'Filter[0].Name' => 'imageID',
+              :'Filter[0].Value[0]' => "#{stemcell_id}",
+        }
+        image = @hwcloudsdk.describe_images_by_name(image_options)
+        cloud_error("Image `#{stemcell_id}' not found") if image["imageSet"]["imageSet"].empty?
+        @logger.debug("Using image: `#{stemcell_id}'")
 
-      #check instnce_type
-      instance_type = resource_pool['instance_type']
-      @logger.debug("Using instance type: `#{instance_type}'")
+        #check instnce_type
+        instance_type = resource_pool['instance_type']
+        @logger.debug("Using instance type: `#{instance_type}'")
 
-      #link_type not need
-      #link_type = resource_pool['link_type']
-      #@logger.debug("Using link_type: `#{link_type}'")
+        #link_type not need
+        #link_type = resource_pool['link_type']
+        #@logger.debug("Using link_type: `#{link_type}'")
 
-      #check keypair
-      keyname = resource_pool['key_name'] || @default_key_name
-      key_options = { 
-        'KeyName[0]'.to_sym => keyname
-      }
-      keypair = @hwcloudsdk.describe_key_pairs(key_options)
-      cloud_error("Key-pair `#{keyname}' not found") unless keypair['keypairsSet']
-      #@logger.debug("Using key-pair: ${keyname}")
+        #check keypair
+        keyname = resource_pool['key_name'] || @default_key_name
+        key_options = { 
+          'KeyName[0]'.to_sym => keyname
+        }
+        keypair = @hwcloudsdk.describe_key_pairs(key_options)
+        cloud_error("Key-pair `#{keyname}' not found") unless keypair['keypairsSet']
+        #@logger.debug("Using key-pair: ${keyname}")
 
-      server_options = {
-        'InstanceType'.to_sym => instance_type,
-        'KeyName'.to_sym      => keyname,
-        'ImageId'.to_sym      => stemcell_id,
-        'MinCount'.to_sym     => 1,
-        'MaxCount'.to_sym     => 1,
-        'AvailabilityZone'.to_sym  => @availabilityzone,
-        'SecurityGroupId'.to_sym   => security_groups[0] 
-      } 
+        server_options = {
+          'InstanceType'.to_sym => instance_type,
+          'KeyName'.to_sym      => keyname,
+          'ImageId'.to_sym      => stemcell_id,
+          'MinCount'.to_sym     => 1,
+          'MaxCount'.to_sym     => 1,
+          'AvailabilityZone'.to_sym  => @availabilityzone,
+          'SecurityGroupId'.to_sym   => security_groups[0] 
+        } 
 
-      ret = @hwcloudsdk.run_instances(server_options)
-      instance_id = ret['instanceId']
-    
-      #wait running
-      wait_resource(instance_id, "running", method(:get_vm_status))
+        ret = @hwcloudsdk.run_instances(server_options)
+        instance_id = ret['instanceId']
+      
+        #wait running
+        wait_resource(instance_id, "running", method(:get_vm_status))
 
-      #acquire vm info
-      options={}
-      options = {
-        'InstanceId[0]'.to_sym => instance_id
-      }
-      instance_info = @hwcloudsdk.describe_instances(options)
+        #acquire vm info
+        options={}
+        options = {
+          'InstanceId[0]'.to_sym => instance_id
+        }
+        instance_info = @hwcloudsdk.describe_instances(options)
 
-      #bind vip , need to modify 
-      network_configurator.configure(@hwcloudsdk, instance_info)
+        #bind vip , need to modify 
+        network_configurator.configure(@hwcloudsdk, instance_info)
 
-      settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
-                                          flavor_has_ephemeral_disk?(instance_type))
-      @registry.update_settings(['instancesSet']['instancesSet'][0]['instanceName'], settings)
+        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
+                                            flavor_has_ephemeral_disk?(instance_type))
+        @registry.update_settings(['instancesSet']['instancesSet'][0]['instanceName'], settings)
 
-      return instance_id
+        return instance_id
 
+      end
     end
-  end
      
 
     def delete_vm(instance_id)
@@ -217,6 +216,7 @@ module Bosh::HwCloud
         volume_info["volumeId"]
       end
     end
+
 
     def validate_disk_size(size)
       raise ArgumentError, "disk size needs to be an integer" unless size.kind_of?(Integer)
@@ -342,7 +342,6 @@ module Bosh::HwCloud
       end
     end
 
-#by zxy
     def get_disks(disk_id)
       with_thread_name("get_disks(#{disk_id})") do
       
@@ -383,12 +382,12 @@ module Bosh::HwCloud
     def snapshot_disk(disk_id, metadata)
       with_thread_name("snapshot_disk(#{disk_id})") do
         
-        volume_info = @qingcloudsdk.describe_available_volumes(disk_id)
+        volume_info = @hwcloudsdk.describe_available_volumes(disk_id)
         cloud_error("Volume `#{disk_id}' not found") if volume_info["total_count"] == 0
 
         snapshot_name = "snapshot-#{generate_unique_name}"
         @logger.info("Creating new snapshot for volume `#{disk_id}'...")
-        ret = @qingcloudsdk.create_snapshots(disk_id, snapshot_name)
+        ret = @hwcloudsdk.create_snapshots(disk_id, snapshot_name)
 
         @logger.info("Creating new snapshot `#{snapshot_name}' for volume `#{disk_id}'...")        
         wait_resource(ret["snapshots"][0], "available", method(:get_snapshot_status))
@@ -402,12 +401,12 @@ module Bosh::HwCloud
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
         @logger.info("Deleting snapshot `#{snapshot_id}'...")
-        snapshot_info = @qingcloudsdk.describe_available_snapshot(snapshot_id)
+        snapshot_info = @hwcloudsdk.describe_available_snapshot(snapshot_id)
         
         if snapshot_info["total_count"] == 1
 
-            ret = @qingcloudsdk.delete_snapshots(snapshot_id)
-            snapshot_after_delete = @qingcloudsdk.describe_snapshot(snapshot_id)
+            ret = @hwcloudsdk.delete_snapshots(snapshot_id)
+            snapshot_after_delete = @hwcloudsdk.describe_snapshot(snapshot_id)
 
             wait_resource(snapshot_after_delete["snapshot_set"][0], "ceased", method(:get_snapshot_status))
 
@@ -419,7 +418,7 @@ module Bosh::HwCloud
 
     def get_snapshot_status(snapshot_id)
       with_thread_name("get_snapshot(#{snapshot_id})") do
-        ret = @qingcloudsdk.describe_snapshot(snapshot_id)
+        ret = @hwcloudsdk.describe_snapshot(snapshot_id)
         return ret["snapshot_set"][0]["status"]
       end
     end
@@ -465,7 +464,7 @@ module Bosh::HwCloud
       actual_group_names = instance.security_groups.collect { |sg| sg.name }
       specified_group_names = extract_security_group_names(network_spec)
       if specified_group_names.empty?
-        new_group_names = Array(qingcloud_properties["default_security_groups"])
+        new_group_names = Array(hwcloud_properties["default_security_groups"])
       else
         new_group_names = specified_group_names
       end
@@ -563,7 +562,7 @@ module Bosh::HwCloud
     # @return [void]
     def set_vm_metadata(instance_id, metadata)
       # with_thread_name("set_vm_metadata(#{instance_id}, ...)") do
-      #     server = @qingcloudsdk.describe_instances(instance_id)
+      #     server = @hwcloudsdk.describe_instances(instance_id)
       #     cloud_error("Server `#{instance_id}' not found") unless server
 
       #     metadata.each do |name, value|
@@ -601,26 +600,17 @@ module Bosh::HwCloud
       @hwcloud_properties ||= options.fetch('hwcloud')
     end
 
-    def qingcloud_region
-      @qingcloud_region ||= qingcloud_properties.fetch('region', nil)
-    end
-
-    def fast_path_delete?
-      qingcloud_properties.fetch('fast_path_delete', false)
-    end
-
-
     def initialize_hwcloud
       hwcloud_logger = logger
       hwcloud_params = {
-          :url =>            hwcloud_properties['url'],
-          :HWSAccessKeyId =>            hwcloud_properties['access_key_id'],
-          :Version=>     hwcloud_properties['version'],
-          :SignatureMethod=> hwcloud_properties['signature_method'],
-          :SignatureNonce=> hwcloud_properties['signature_nonce'],
-          :SignatureVersion=> hwcloud_properties['signature_version'],
-          :RegionName=> hwcloud_properties['region_name'],
-          :Key=> hwcloud_properties['key'],
+          :url => hwcloud_properties['url'],
+          :HWSAccessKeyId => hwcloud_properties['access_key_id'],
+          :Version => hwcloud_properties['version'],
+          :SignatureMethod => hwcloud_properties['signature_method'],
+          :SignatureNonce => hwcloud_properties['signature_nonce'],
+          :SignatureVersion => hwcloud_properties['signature_version'],
+          :RegionName => hwcloud_properties['region_name'],
+          :Key => hwcloud_properties['key'],
       }
 
 
@@ -653,7 +643,7 @@ module Bosh::HwCloud
 
       option = {:'InstanceId[0]' => "#{instance_id}"}
       instance_info = @hwcloudsdk.describe_instances(option)
-      puts instance_info["instancesSet"]
+
       if instance_info["instancesSet"]
         # settings = registry.read_settings(instance_id)
         puts instance_info["instancesSet"]["instancesSet"][0]["instanceName"]
@@ -703,12 +693,10 @@ module Bosh::HwCloud
     # Checks if options passed to CPI are valid and can actually
     # be used to create all required data structures etc.
     #
-
-#by zxy
     def validate_options
       required_keys = {
           "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key","AvailabilityZone"],
-          #"registry" => ["endpoint", "user", "password"],
+          "registry" => ["endpoint", "user", "password"],
       }
 
       missing_keys = []
@@ -723,6 +711,7 @@ module Bosh::HwCloud
 
       raise ArgumentError, "missing configuration parameters > #{missing_keys.join(', ')}" unless missing_keys.empty?
     end
+
     ##
     # Checks if the HwCloud instance type has ephemeral disk
     #

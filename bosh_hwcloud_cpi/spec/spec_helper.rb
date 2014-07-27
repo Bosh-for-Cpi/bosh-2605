@@ -3,8 +3,8 @@ require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
 require 'tmpdir'
 require 'cloud/hwcloud'
 
-MOCK_QingCloud_ACCESS_KEY_ID = 'foo'
-MOCK_QingCloud_SECRET_ACCESS_KEY = 'bar'
+MOCK_HwCloud_ACCESS_KEY_ID = 'foo'
+MOCK_HwCloud_SECRET_ACCESS_KEY = 'bar'
 
 def internal_to(*args, &block)
   example = describe *args, &block
@@ -25,8 +25,8 @@ def mock_cloud_options
     'plugin' => 'hwcloud',
     'properties' => {
       'hwcloud' => {
-        'access_key_id' => MOCK_QingCloud_ACCESS_KEY_ID,
-        'secret_access_key' => MOCK_QingCloud_SECRET_ACCESS_KEY,
+        'access_key_id' => MOCK_HwCloud_ACCESS_KEY_ID,
+        'secret_access_key' => MOCK_HwCloud_SECRET_ACCESS_KEY,
         'region' => 'us-east-1',
         'default_key_name' => 'sesame',
         'default_security_groups' => []

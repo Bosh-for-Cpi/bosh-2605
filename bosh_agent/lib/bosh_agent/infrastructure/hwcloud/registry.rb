@@ -73,7 +73,7 @@ module Bosh::Agent
 =begin        
         user_data = get_user_data
         unless user_data.has_key?("server") && user_data["server"].has_key?("name")
-          raise LoadSettingsError, "Cannot get Hwcloud server name from user data #{user_data.inspect}"
+          raise LoadSettingsError, "Cannot get HwCloud server name from user data #{user_data.inspect}"
         end
         user_data["server"]["name"]
 =end
@@ -154,38 +154,38 @@ module Bosh::Agent
       end
 
       ##
-      # Gets the Hwcloud user data. First we try to get it from the Hwcloud user data endpoint, if we fail,
+      # Gets the HwCloud user data. First we try to get it from the HwCloud user data endpoint, if we fail,
       # then we fallback to the injected user data file.
       #
-      # @return [Hash] Hwcloud user data
+      # @return [Hash] HwCloud user data
       def get_user_data
         return @user_data if @user_data
         begin
           raw_user_data = get_uri(META_DATA_URI + "/user-data")
         rescue LoadSettingsError => e
-          logger.info("Failed to get user data from Hwcloud user data endpoint: #{e.message}")
+          logger.info("Failed to get user data from HwCloud user data endpoint: #{e.message}")
           raw_user_data = get_user_data_from_file
         end
 
-        logger.info("Hwcloud user data: #{raw_user_data.inspect}")
+        logger.info("HwCloud user data: #{raw_user_data.inspect}")
         @user_data = parse_user_data(raw_user_data)
       end
 
       ##
-      # Gets the Hwcloud user data from the injected user data file.
+      # Gets the HwCloud user data from the injected user data file.
       #
-      # @return [String] Hwcloud user data
+      # @return [String] HwCloud user data
       def get_user_data_from_file
         File.read(USER_DATA_FILE)
       rescue SystemCallError => e
-        raise LoadSettingsError, "Failed to get user data from Hwcloud injected user data file: #{e.message}"
+        raise LoadSettingsError, "Failed to get user data from HwCloud injected user data file: #{e.message}"
       end
 
       ##
-      # Parses the Hwcloud user data.
+      # Parses the HwCloud user data.
       #
-      # @param [String] raw_user_data Raw Hwcloud user data
-      # @return [Hash] Hwcloud user data
+      # @param [String] raw_user_data Raw HwCloud user data
+      # @return [Hash] HwCloud user data
       def parse_user_data(raw_user_data)
         begin
           user_data = Yajl::Parser.parse(raw_user_data)
