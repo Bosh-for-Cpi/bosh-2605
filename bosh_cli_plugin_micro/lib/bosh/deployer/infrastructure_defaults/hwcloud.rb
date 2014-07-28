@@ -32,8 +32,9 @@ module Bosh::Deployer::InfrastructureDefaults
           'signature_nonce' => nil,
           'signature_version' => nil,
           'version' => nil,
-          'region_name' => nil,		
-          'availability_zone' => nil,			  
+          'region_name' => nil,
+          'availability_zone' => nil,
+          'default_key_name' => nil,
           'wait_resource_poll_interval' => 5,
           'default_security_groups' => [],
           'ssh_user' => 'vcap'

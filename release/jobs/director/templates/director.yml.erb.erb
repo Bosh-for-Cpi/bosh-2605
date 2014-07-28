@@ -250,10 +250,11 @@ cloud:
 
 <% if_p('hwcloud.url', 'hwcloud.access_key_id', 'hwcloud.key', 'hwcloud.signature_method', 
 'hwcloud.signature_nonce', 'hwcloud.signature_version', 'hwcloud.version', 
-'hwcloud.region_name', 'hwcloud.availability_zone',  'hwcloud.default_security_groups',
+'hwcloud.region_name', 'hwcloud.availability_zone',  'hwcloud.default_key_name', 'hwcloud.default_security_groups',
 'hwcloud.wait_resource_poll_interval', 'registry.address', 'registry.http.port', 'registry.http.user',
-        'registry.http.password') do |url, access_key_id, key, signature_method, signature_nonce, 
-                                  signature_version, version, region_name, availability_zone, default_key_name, default_security_groups, wait_resource_poll_interval, reg_address,reg_port, reg_user, reg_password| %>
+ 'registry.http.password') do |url, access_key_id, key, signature_method, signature_nonce,
+signature_version, version, region_name, availability_zone, default_key_name,
+default_security_groups, wait_resource_poll_interval, reg_address,reg_port, reg_user, reg_password| %>
   plugin: hwcloud <% plugin = "hwcloud" %>
   properties:
     hwcloud:
@@ -278,6 +279,7 @@ cloud:
       <% if_p("hwcloud.boot_from_volume") do |boot_from_volume| %>
       boot_from_volume: <%= boot_from_volume %>
       <% end %>
+      default_key_name: <%= default_key_name %>
       default_security_groups: <%= default_security_groups %>
       wait_resource_poll_interval: <%= wait_resource_poll_interval %>
     registry:

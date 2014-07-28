@@ -167,8 +167,15 @@ properties:
     - 1.north-america.pool.ntp.org
 
   hwcloud:
-    region: <region> # CHANGE
+    url: <url> # CHANGE
     access_key_id: <access_key_id> # CHANGE
-    secret_access_key: <secret_access_key> # CHANGE
+    key: <key> # CHANGE
+    signature_method: <signature_method> # CHANGE
+    signature_nonce: <signature_nonce> # CHANGE
+    signature_version: <signature_version> # CHANGE
+    version: <version> # CHANGE
+    region_name: <region_name> # CHANGE
+    availability_zone: <availability_zone> # CHANGE
+    default_key_name: <default_key_name> # CHANGE
     default_security_groups: ["default", <microbosh_security_group>] # CHANGE
     default_key_name: <microbosh_keypair> # CHANGE

@@ -11,9 +11,9 @@ describe Bosh::Registry::InstanceManager do
       @config["cloud"] = {
         "plugin" => "qingcloud",
         "qingcloud" => {
-          "region" => "gd1",
-		  "access_key_id" => "foo-key",
-		  "secret_access_key" => "foo-secret"
+        "region" => "gd1",
+        "access_key_id" => "foo-key",
+        "secret_access_key" => "foo-secret"
         }
       }
     end

@@ -55,7 +55,6 @@ cloud:
       region: region
       access_key_id: access_key_id
       secret_access_key: secret_access_key
-      endpoint_type: publicURL
       default_key_name: jenkins
       default_security_groups:
       - default
@@ -110,7 +109,6 @@ cloud:
       region: region
       access_key_id: access_key_id
       secret_access_key: secret_access_key
-      endpoint_type: publicURL
       default_key_name: jenkins
       default_security_groups:
       - default
@@ -203,7 +201,6 @@ YAML
             'region' => 'fake-region',
             'access_key_id' =>  'fake-access-key-id',
             'secret_access_key' => 'fake-secret-access-key',
-            'endpoint_type' => 'publicURL',
             'default_key_name' => 'jenkins',
             'default_security_groups' => ['default'],
             'private_key' => 'fake-private-key-path',

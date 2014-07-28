@@ -30,7 +30,6 @@ module Bosh::Deployer::InfrastructureDefaults
           'api_key' => nil,
           'tenant' => nil,
           'region' => nil,
-          'endpoint_type' => 'publicURL',
           'default_key_name' => nil,
           'wait_resource_poll_interval' => 5,
           'default_security_groups' => [],

@@ -36,6 +36,11 @@ module Bosh::HwCloud
       initialize_hwcloud
       initialize_registry
 
+      @default_key_name = @hwcloud_properties["default_key_name"]
+      @default_security_groups = @hwcloud_properties["default_security_groups"]
+      @state_timeout = @hwcloud_properties["state_timeout"]
+      @wait_resource_poll_interval = @hwcloud_properties["wait_resource_poll_interval"]
+
       @metadata_lock = Mutex.new
     end
 

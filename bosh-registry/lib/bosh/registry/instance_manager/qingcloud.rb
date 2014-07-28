@@ -28,7 +28,6 @@ module Bosh::Registry
           :qingcloud_region => @qingcloud_properties['region'],
           :qingcloud_access_key_id => @qingcloud_properties['access_key_id'],
           :qingcloud_secret_access_key => @qingcloud_properties['secret_access_key'],
-          :qingcloud_endpoint_type => @qingcloud_properties['endpoint_type'],
           :connection_options => @qingcloud_properties['connection_options']
         }
       end

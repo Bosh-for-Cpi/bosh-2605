@@ -71,6 +71,9 @@ module Bosh::Dev::Hwcloud
           'signature_method' => env['BOSH_HWCLOUD_SIGNATURE_METHOD'],
           'version' => env['BOSH_HWCLOUD_VERSION'],
           'region_name' => env['BOSH_HWCLOUD_REGION_NAME'],
+          'default_key_name' => 'jenkins',
+          'default_security_groups' => ['default'],
+          'private_key' => env['BOSH_QINGCLOUD_PRIVATE_KEY'],
           'state_timeout' => state_timeout,
           'wait_resource_poll_interval' => 5,
           'connection_options' => {
