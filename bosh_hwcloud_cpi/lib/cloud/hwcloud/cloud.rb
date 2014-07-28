@@ -695,7 +695,7 @@ module Bosh::HwCloud
     #
     def validate_options
       required_keys = {
-          "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key","AvailabilityZone"],
+          "hwcloud" => ["url", "access_key_id", "version", "signature_method","signature_nonce", "signature_version", "region_name", "key","availability_zone"],
           "registry" => ["endpoint", "user", "password"],
       }
 
