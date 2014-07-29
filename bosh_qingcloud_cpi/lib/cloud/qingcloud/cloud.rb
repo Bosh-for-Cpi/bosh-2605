@@ -127,14 +127,9 @@ module Bosh::QingCloud
 
         net_id = "vxnet-0"
         network_spec.each_pair do |name, network|
-          network_type = network["type"] || "manual"
-          if network_type == "dynamic"
-            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-          elsif network_type == "manual"
-            static_ip = network["ip"]
-            net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
-            net_id = net_id + "|" + static_ip unless static_ip == nil
-          end
+          static_ip = network["ip"]
+          net_id = network["cloud_properties"]["net_id"] == nil ? "vxnet-0" : network["cloud_properties"]["net_id"]
+          net_id = net_id + "|" + static_ip unless static_ip == nil
         end
 
         user_data = Base64.encode64(user_data(server_name, network_spec, "ssh-rsa " + keypair["keypair_set"][0]["pub_key"]).to_json)
