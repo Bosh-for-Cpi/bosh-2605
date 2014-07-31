@@ -36,6 +36,11 @@ module Bosh::HwCloud
       initialize_hwcloud
       initialize_registry
 
+      @default_key_name = @hwcloud_properties["default_key_name"]
+      @default_security_groups = @hwcloud_properties["default_security_groups"]
+      @state_timeout = @hwcloud_properties["state_timeout"]
+      @wait_resource_poll_interval = @hwcloud_properties["wait_resource_poll_interval"]
+
       @metadata_lock = Mutex.new
     end
 
@@ -82,13 +87,14 @@ module Bosh::HwCloud
       
         #network
         network_configurator = NetworkConfigurator.new(network_spec)
-        security_groups = network_configurator.security_groups(nil)
-        @logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
+        #security_groups = network_configurator.security_groups(nil)
+        security_groups = @default_security_groups
+        #@logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
 
 
         #check image exists
         image_options = {
-              :'Filter[0].Name' => 'imageID',
+              :'Filter[0].Name' => 'imageId',
               :'Filter[0].Value[0]' => "#{stemcell_id}",
         }
         image = @hwcloudsdk.describe_images_by_name(image_options)
@@ -110,7 +116,7 @@ module Bosh::HwCloud
         }
         keypair = @hwcloudsdk.describe_key_pairs(key_options)
         cloud_error("Key-pair `#{keyname}' not found") unless keypair['keypairsSet']
-        #@logger.debug("Using key-pair: ${keyname}")
+        @logger.debug("Using key-pair: ${keyname}")
 
         server_options = {
           'InstanceType'.to_sym => instance_type,
@@ -119,11 +125,18 @@ module Bosh::HwCloud
           'MinCount'.to_sym     => 1,
           'MaxCount'.to_sym     => 1,
           'AvailabilityZone'.to_sym  => @availabilityzone,
-          'SecurityGroupId'.to_sym   => security_groups[0] 
+          'SecurityGroupId'.to_sym   => security_groups[0],
+          'InstanceName'.to_sym => server_name 
         } 
 
+        @logger.info("@hwcloudsdk.run_instances server_options  #{server_options}")
         ret = @hwcloudsdk.run_instances(server_options)
-        instance_id = ret['instanceId']
+        @logger.info("@hwcloudsdk.run_instances result  #{ret}")
+        sleep(60)
+#        instance_id = ret['instanceId']
+#@logger.info("wjq:instance_id---->#{instance_id}")
+        instance_id = ret['runInstancesSet']['runInstancesSet'][0]['instanceId']
+#@logger.info("wjq:test_myself--->#{instance_id}")
       
         #wait running
         wait_resource(instance_id, "running", method(:get_vm_status))
@@ -140,7 +153,7 @@ module Bosh::HwCloud
 
         settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
                                             flavor_has_ephemeral_disk?(instance_type))
-        @registry.update_settings(['instancesSet']['instancesSet'][0]['instanceName'], settings)
+        @registry.update_settings(instance_info['instancesSet']['instancesSet'][0]['instanceName'], settings)
 
         return instance_id
 
@@ -187,6 +200,8 @@ module Bosh::HwCloud
       with_thread_name("get_vm_status(#{instance_id})") do
         options = {'InstanceId[0]'.to_sym => instance_id}
         instance = @hwcloudsdk.describe_instances(options)
+        logger.info("instance info: #{instance}")
+#        logger.info("instance state: #{instance['instancesSet']['instancesSet'][0]['instanceState']['name']}")
         return instance['instancesSet']['instancesSet'][0]['instanceState']['name']
       end
     end
@@ -533,7 +548,7 @@ module Bosh::HwCloud
     def delete_stemcell(stemcell_id)
       with_thread_name("delete_stemcell(#{stemcell_id})") do
         options={
-          :'Filter[0].Name' => 'imageID',
+          :'Filter[0].Name' => 'imageId',
           :'Filter[0].Value[0]' => "#{stemcell_id}",
         }
         image = @hwcloudsdk.describe_images_by_name(options)
@@ -602,6 +617,8 @@ module Bosh::HwCloud
 
     def initialize_hwcloud
       hwcloud_logger = logger
+
+      @default_key_name = "openapi-key"
       hwcloud_params = {
           :url => hwcloud_properties['url'],
           :HWSAccessKeyId => hwcloud_properties['access_key_id'],
@@ -695,7 +712,7 @@ module Bosh::HwCloud
     #
     def validate_options
       required_keys = {
-          "hwcloud" => ["url", "HWSAccessKeyId", "Version", "SignatureMethod","SignatureNonce", "SignatureVersion", "RegionName", "Key","AvailabilityZone"],
+          "hwcloud" => ["url", "access_key_id", "version", "signature_method","signature_nonce", "signature_version", "region_name", "key","availability_zone"],
           "registry" => ["endpoint", "user", "password"],
       }
 
