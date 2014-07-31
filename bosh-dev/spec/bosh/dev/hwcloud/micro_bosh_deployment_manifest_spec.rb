@@ -58,13 +58,14 @@ cloud:
       access_key_id: 6D9EA5E06E03E40C79FCCD501F3A9D7B
       key: key
       signature_method: HmacSHA256
-	  signature_nonce: 1000
-	  signature_version: 1
+      signature_nonce: 1000
+      signature_version: 1
       version: 1
       region_name: 中国华北
       availability_zone: b451c1ea3c8d4af89d03e5cacf1e4276
+      default_key_name: jenkins
       default_security_groups:
-      - default
+      - default 
       state_timeout: 300
       wait_resource_poll_interval: 5
       connection_options:
@@ -121,6 +122,7 @@ cloud:
       version: 1
       region_name: 中国华北
       availability_zone: b451c1ea3c8d4af89d03e5cacf1e4276
+      default_key_name: jenkins      
       default_security_groups:
       - default
       state_timeout: 300
@@ -219,6 +221,7 @@ YAML
             'version' =>  1
             'region_name' =>  中国华北
             'availability_zone' =>  b451c1ea3c8d4af89d03e5cacf1e4276
+            'default_key_name' => jenkins            
             'default_security_groups' => ['default'],
             'state_timeout' => 300,
             'wait_resource_poll_interval' => 5,

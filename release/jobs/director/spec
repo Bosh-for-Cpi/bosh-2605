@@ -371,6 +371,8 @@ properties:
     default: false
   hwcloud.connection_options:
     description: Hash containing optional connection parameters to the HwCloud API
+  hwcloud.default_key_name:
+    description: Default HwCloud keypair to use when spinning up new vms
   hwcloud.default_security_groups:
     description: Default HwCloud security groups to use when spinning up new vms
   hwcloud.wait_resource_poll_interval:
@@ -412,10 +414,7 @@ properties:
   qingcloud.access_key_id:
     description: QingCloud access key id
   qingcloud.secret_access_key:
-    description: QingCloud secret access key    
-  qingcloud.endpoint_type:
-    description: QingCloud endpoint type (optional, by default publicURL)
-    default: publicURL
+    description: QingCloud secret access key
   qingcloud.state_timeout:
     description: Timeout (in seconds) for QingCloud resources desired state (optional, by default 300)
     default: 300

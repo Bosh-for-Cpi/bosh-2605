@@ -14,7 +14,7 @@ module Bosh::Registry
         @hwcloud_properties = cloud_config['hwcloud']
 
         @hwcloud_options = {
-	  :provider => 'HwCloud',
+          :provider => 'HwCloud',
           :url => @hwcloud_properties['url'],
           :HWSAccessKeyId => @hwcloud_properties['access_key_id'],
           :Version =>  @hwcloud_properties['version'],

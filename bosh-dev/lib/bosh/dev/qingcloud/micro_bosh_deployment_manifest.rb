@@ -67,8 +67,7 @@ module Bosh::Dev::Qingcloud
         'qingcloud' => {
           'region' => env['BOSH_QINGCLOUD_REGION'],
           'access_key_id' => env['BOSH_QINGCLOUD_ACCESS_KEY_ID'],
-          'secret_access_key' => env['BOSH_QINGCLOUD_SECRET_ACCESS_KEY'],		  
-          'endpoint_type' => 'publicURL',
+          'secret_access_key' => env['BOSH_QINGCLOUD_SECRET_ACCESS_KEY'],
           'default_key_name' => 'jenkins',
           'default_security_groups' => ['default'],
           'private_key' => env['BOSH_QINGCLOUD_PRIVATE_KEY'],

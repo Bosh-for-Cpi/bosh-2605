@@ -20,7 +20,10 @@ cloud:
       signature_version: 1
       version: 1
       region_name: foo-region
-      availability_zone: foo-zone  
+      availability_zone: foo-zone
+      default_key_name: foo-key
+      default_security_groups: ["quick-start-1"]
+      private_key: spec/assets/fake-private.key
     registry:
       endpoint: http://admin:admin@10.176.194.184:25695
       user: admin

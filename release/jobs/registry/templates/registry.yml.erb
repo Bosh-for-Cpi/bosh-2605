@@ -66,9 +66,6 @@ cloud:
     region: <%= region %>
     access_key_id: <%= access_key_id %>
     secret_access_key: <%= secret_access_key %>
-    <% if_p('qingcloud.endpoint_type') do |endpoint_type| %>
-    endpoint_type: <%= endpoint_type %>
-    <% end %>
     <% if_p('qingcloud.connection_options') do |connection_options| %>
     connection_options: <%= JSON.generate(connection_options) %>
     <% end %>
