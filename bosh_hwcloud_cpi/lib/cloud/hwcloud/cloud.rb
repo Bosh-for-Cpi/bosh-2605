@@ -132,15 +132,17 @@ module Bosh::HwCloud
         @logger.info("@hwcloudsdk.run_instances server_options  #{server_options}")
         ret = @hwcloudsdk.run_instances(server_options)
         @logger.info("@hwcloudsdk.run_instances result  #{ret}")
-        sleep(60)
+	#enough time for slow IAAS
+        sleep(180)
 #        instance_id = ret['instanceId']
 #@logger.info("wjq:instance_id---->#{instance_id}")
         instance_id = ret['runInstancesSet']['runInstancesSet'][0]['instanceId']
+
 #@logger.info("wjq:test_myself--->#{instance_id}")
       
         #wait running
         wait_resource(instance_id, "running", method(:get_vm_status))
-
+        instance_ip = get_instance_ip(instance_id)
         #acquire vm info
         options={}
         options = {
@@ -148,18 +150,30 @@ module Bosh::HwCloud
         }
         instance_info = @hwcloudsdk.describe_instances(options)
 
-        #bind vip , need to modify 
+        #bind vip , need to modify
+        begin 
         network_configurator.configure(@hwcloudsdk, instance_info)
 
-        settings = initial_agent_settings(server_name, agent_id, network_spec, environment,
+#server_name--->instance_ip
+        settings = initial_agent_settings(instance_ip, agent_id, network_spec, environment,
                                             flavor_has_ephemeral_disk?(instance_type))
-        @registry.update_settings(instance_info['instancesSet']['instancesSet'][0]['instanceName'], settings)
+        @registry.update_settings(instance_ip, settings)
 
-        return instance_id
-
+        ensure
+          return instance_id
+        end
       end
     end
-     
+
+    def get_instance_ip(instance_id)
+      with_thread_name("get_vm_ip(#{instance_id})") do
+        options = {'InstanceId[0]'.to_sym => instance_id}
+        instance = @hwcloudsdk.describe_instances(options)
+        logger.info("instance info: #{instance}")
+#        logger.info("instance state: #{instance['instancesSet']['instancesSet'][0]['instanceState']['name']}")
+        return instance['instancesSet']['instancesSet'][0]['privateIpAddress']
+      end
+    end
 
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
@@ -664,9 +678,11 @@ module Bosh::HwCloud
       if instance_info["instancesSet"]
         # settings = registry.read_settings(instance_id)
         puts instance_info["instancesSet"]["instancesSet"][0]["instanceName"]
-        settings = registry.read_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"])
+        #settings = registry.read_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"])
+        settings = registry.read_settings(instance_info['instancesSet']['instancesSet'][0]['privateIpAddress'])
         yield settings
-        registry.update_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"], settings)
+        #registry.update_settings(instance_info["instancesSet"]["instancesSet"][0]["instanceName"], settings)
+        registry.update_settings(instance_info['instancesSet']['instancesSet'][0]['privateIpAddress'], settings)
       else
         @logger.info("Server `#{instance_id}' not found. Skipping.")
       end
@@ -712,7 +728,7 @@ module Bosh::HwCloud
     #
     def validate_options
       required_keys = {
-          "hwcloud" => ["url", "access_key_id", "version", "signature_method","signature_nonce", "signature_version", "region_name", "key","availability_zone"],
+          "hwcloud" => ["url", "access_key_id", "version", "signature_method", "signature_version", "region_name", "key","availability_zone"],
           "registry" => ["endpoint", "user", "password"],
       }
 

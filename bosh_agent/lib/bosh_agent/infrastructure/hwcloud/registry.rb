@@ -1,4 +1,5 @@
 # Copyright (c) 2009-2013 VMware, Inc.
+require 'socket'
 
 module Bosh::Agent
   class Infrastructure::Hwcloud::Registry
@@ -46,7 +47,7 @@ module Bosh::Agent
       # @return [Hash] Agent Settings
       def get_settings
         @registry_endpoint ||= get_registry_endpoint
-        url = "#{@registry_endpoint}/instances/#{get_server_name}/settings"
+        url = "#{@registry_endpoint}/instances/#{get_local_ip}/settings"
         raw_response = get_uri(url)
 
         registry_data = Yajl::Parser.parse(raw_response)
@@ -81,6 +82,18 @@ module Bosh::Agent
         return "microbosh"        
       end
 
+      #get_server_ip
+      def get_local_ip
+        orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
+
+        UDPSocket.open do |s|
+          s.connect '64.233.187.99', 1
+          s.addr.last
+        end
+      ensure
+        Socket.do_not_reverse_lookup = orig
+      end
+
       ##
       # Gets the Bosh registry endpoint from Hwcloud user data.
       #
@@ -93,7 +106,7 @@ module Bosh::Agent
         end
         lookup_registry_endpoint(user_data)
 =end
-        return "10.210.4.28"        
+        return "http://10.210.4.28:25777"        
       end
 
       ##
