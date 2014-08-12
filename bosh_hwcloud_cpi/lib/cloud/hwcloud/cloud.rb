@@ -133,7 +133,7 @@ module Bosh::HwCloud
         ret = @hwcloudsdk.run_instances(server_options)
         @logger.info("@hwcloudsdk.run_instances result  #{ret}")
 	#enough time for slow IAAS
-        sleep(180)
+        sleep(600)
 #        instance_id = ret['instanceId']
 #@logger.info("wjq:instance_id---->#{instance_id}")
         instance_id = ret['runInstancesSet']['runInstancesSet'][0]['instanceId']
@@ -142,7 +142,6 @@ module Bosh::HwCloud
       
         #wait running
         wait_resource(instance_id, "running", method(:get_vm_status))
-        instance_ip = get_instance_ip(instance_id)
         #acquire vm info
         options={}
         options = {
@@ -150,6 +149,8 @@ module Bosh::HwCloud
         }
         instance_info = @hwcloudsdk.describe_instances(options)
 
+        instance_ip = instance_info['instancesSet']['instancesSet'][0]['privateIpAddress']
+@logger.info("wjq:instance_ip-------->#{instance_ip}")
         #bind vip , need to modify
         begin 
         network_configurator.configure(@hwcloudsdk, instance_info)
@@ -165,15 +166,6 @@ module Bosh::HwCloud
       end
     end
 
-    def get_instance_ip(instance_id)
-      with_thread_name("get_vm_ip(#{instance_id})") do
-        options = {'InstanceId[0]'.to_sym => instance_id}
-        instance = @hwcloudsdk.describe_instances(options)
-        logger.info("instance info: #{instance}")
-#        logger.info("instance state: #{instance['instancesSet']['instancesSet'][0]['instanceState']['name']}")
-        return instance['instancesSet']['instancesSet'][0]['privateIpAddress']
-      end
-    end
 
     def delete_vm(instance_id)
       with_thread_name("delete_vm(#{instance_id})") do
