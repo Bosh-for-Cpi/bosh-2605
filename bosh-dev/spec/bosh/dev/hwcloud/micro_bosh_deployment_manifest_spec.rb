@@ -58,7 +58,6 @@ cloud:
       access_key_id: 6D9EA5E06E03E40C79FCCD501F3A9D7B
       key: key
       signature_method: HmacSHA256
-      signature_nonce: 1000
       signature_version: 1
       version: 1
       region_name: 中国华北
@@ -117,7 +116,6 @@ cloud:
       access_key_id: 6D9EA5E06E03E40C79FCCD501F3A9D7B
       key: key
       signature_method: HmacSHA256
-	  signature_nonce: 1000
 	  signature_version: 1
       version: 1
       region_name: 中国华北
@@ -216,7 +214,6 @@ YAML
             'access_key_id' => 6D9EA5E06E03E40C79FCCD501F3A9D7B
             'key' => key
             'signature_method' =>  HmacSHA256
-            'signature_nonce' =>  1000
             'signature_version' =>  1
             'version' =>  1
             'region_name' =>  中国华北

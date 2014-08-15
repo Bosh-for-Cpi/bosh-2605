@@ -53,7 +53,6 @@ properties:
       access_key_id: foo-key
       key:foo-secret
       signature_method: HmacSHA256
-      signature_nonce: 1000
       signature_version: 1
       version: 1
       region_name: foo-region

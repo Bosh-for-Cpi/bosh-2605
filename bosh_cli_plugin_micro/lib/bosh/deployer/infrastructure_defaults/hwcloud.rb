@@ -29,7 +29,6 @@ module Bosh::Deployer::InfrastructureDefaults
           'access_key_id' => nil,
           'key' => nil,
           'signature_method' => nil,
-          'signature_nonce' => nil,
           'signature_version' => nil,
           'version' => nil,
           'region_name' => nil,

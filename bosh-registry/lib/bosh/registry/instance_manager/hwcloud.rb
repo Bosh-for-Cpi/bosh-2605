@@ -14,12 +14,11 @@ module Bosh::Registry
         @hwcloud_properties = cloud_config['hwcloud']
 
         @hwcloud_options = {
-	  :provider => 'HwCloud',
+          :provider => 'HwCloud',
           :url => @hwcloud_properties['url'],
           :HWSAccessKeyId => @hwcloud_properties['access_key_id'],
           :Version =>  @hwcloud_properties['version'],
           :SignatureMethod => @hwcloud_properties['signature_method'],
-         # :SignatureNonce => @hwcloud_properties['signature_nonce'],
           :SignatureVersion => @hwcloud_properties['signature_version'],
           :RegionName => @hwcloud_properties['region_name'],
           :Key => @hwcloud_properties['key']
@@ -37,7 +36,6 @@ module Bosh::Registry
             cloud_config['hwcloud']['access_key_id'] &&
             cloud_config['hwcloud']['version'] &&
             cloud_config['hwcloud']['signature_method'] &&
-        #    cloud_config['hwcloud']['signature_nonce'] &&
             cloud_config['hwcloud']['signature_version'] &&
             cloud_config['hwcloud']['region_name'] &&                                                            
             cloud_config['hwcloud']['key'] 

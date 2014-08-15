@@ -193,7 +193,6 @@ properties:
     access_key_id: <access_key_id> # CHANGE
     key: <key> # CHANGE
     signature_method: <signature_method> # CHANGE
-    signature_nonce: <signature_nonce> # CHANGE
     signature_version: <signature_version> # CHANGE
     version: <version> # CHANGE
     region_name: <region_name> # CHANGE
