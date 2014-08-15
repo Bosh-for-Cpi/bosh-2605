@@ -62,9 +62,7 @@ properties:
   hwcloud.key:
     description: HwCloud key
   hwcloud.signature_method:
-    description: HwCloud signature method 
-  hwcloud.signature_nonce:
-    description: HwCloud signature nonce
+    description: HwCloud signature method
   hwcloud.signature_version:
     description: HwCloud signature version
   hwcloud.version:
