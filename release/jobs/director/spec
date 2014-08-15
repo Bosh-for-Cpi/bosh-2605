@@ -250,19 +250,17 @@ properties:
     description: HwCloud url
   compiled_package_cache.options.hwcloud_access_key_id:
     description: HwCloud access key id
-  compiled_package_cache.options.key:
+  compiled_package_cache.options.hwcloud_key:
     description: HwCloud key
-  compiled_package_cache.options.signature_method:
+  compiled_package_cache.options.hwcloud_signature_method:
     description: HwCloud signature method
-  compiled_package_cache.options.signature_nonce:
-    description: HwCloud signature nonce
-  compiled_package_cache.options.signature_version:
+  compiled_package_cache.options.hwcloud_signature_version:
     description: HwCloud signature version
-  compiled_package_cache.options.version:
+  compiled_package_cache.options.hwcloud_version:
     description: HwCloud version
-  compiled_package_cache.options.region_name:
+  compiled_package_cache.options.hwcloud_region_name:
     description: HwCloud region name
-  compiled_package_cache.options.availability_zone:
+  compiled_package_cache.options.hwcloud_availability_zone:
     description: HwCloud availability zone                    
   compiled_package_cache.options.openstack_auth_url:
     description: URL of the OpenStack Identity endpoint to connect to
