@@ -88,7 +88,12 @@ module Bosh::HwCloud
         #network
         network_configurator = NetworkConfigurator.new(network_spec)
         #security_groups = network_configurator.security_groups(nil)
-        security_groups = @default_security_groups
+        if resource_pool['security_groups']
+          security_groups = resource_pool['security_groups']
+        else
+          security_groups = @default_security_groups
+        end
+
         #@logger.debug("Using security groups: `#{security_groups.join(', ')}'")     
 
 
@@ -131,14 +136,12 @@ module Bosh::HwCloud
 
         @logger.info("@hwcloudsdk.run_instances server_options  #{server_options}")
         ret = @hwcloudsdk.run_instances(server_options)
-        @logger.info("wjq:@hwcloudsdk.run_instances result  #{ret}")
+        @logger.info("@hwcloudsdk.run_instances result  #{ret}")
+        
         #enough time for slow IAAS
-        sleep(500)
-#        instance_id = ret['instanceId']
-#@logger.info("wjq:instance_id---->#{instance_id}")
-        instance_id = ret['runInstancesSet']['runInstancesSet'][0]['instanceId']
+        sleep(900)
 
-@logger.info("wjq:test_myself--->#{instance_id}")
+        instance_id = ret['runInstancesSet']['runInstancesSet'][0]['instanceId']
       
         #wait running
         wait_resource(instance_id, "running", method(:get_vm_status))
@@ -150,19 +153,20 @@ module Bosh::HwCloud
         instance_info = @hwcloudsdk.describe_instances(options)
 
         instance_ip = instance_info['instancesSet']['instancesSet'][0]['privateIpAddress']
-@logger.info("wjq:instance_ip-------->#{instance_ip}")
+        @logger.info("instance_ip #{instance_ip}")
         #bind vip , need to modify
         begin 
         network_configurator.configure(@hwcloudsdk, instance_info)
 
-#server_name--->instance_ip
+        #server_name--->instance_ip
         ensure
         settings = initial_agent_settings(instance_ip, agent_id, network_spec, environment,
                                             flavor_has_ephemeral_disk?(instance_type))
-@logger.info("wjqq:settings---->#{settings}")
+
         @registry.update_settings(instance_ip, settings)
+
         sleep(60)
-      #  ensure
+
           return instance_id
         end
       end
@@ -207,7 +211,6 @@ module Bosh::HwCloud
     def get_vm_status(instance_id)
       with_thread_name("get_vm_status(#{instance_id})") do
         options = {'InstanceId[0]'.to_sym => instance_id}
-logger.info("wjq:options--->#{options}")
         instance = @hwcloudsdk.describe_instances(options)
         logger.info("instance info: #{instance}")
 #        logger.info("instance state: #{instance['instancesSet']['instancesSet'][0]['instanceState']['name']}")

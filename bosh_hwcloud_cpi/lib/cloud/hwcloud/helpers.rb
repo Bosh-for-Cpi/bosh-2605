@@ -26,7 +26,7 @@ module Bosh::HwCloud
           uniq
     end
 
-    DEFAULT_STATE_TIMEOUT = 300 # Default timeout for target state (in seconds)
+    DEFAULT_STATE_TIMEOUT = 600 # Default timeout for target state (in seconds)
     MAX_RETRIES = 10 # Max number of retries
     DEFAULT_RETRY_TIMEOUT = 3 # Default timeout before retrying a call (in seconds)
 
