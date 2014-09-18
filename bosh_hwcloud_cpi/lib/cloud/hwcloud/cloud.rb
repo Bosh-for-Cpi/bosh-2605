@@ -464,7 +464,7 @@ module Bosh::HwCloud
 
         instance_info = @hwcloudsdk.describe_instances(options)
 
-        if instance_info[instancesSet] == nil 
+        if instance_info['instancesSet'] == nil 
           cloud_error("Can not find the Instance")
         end
 
