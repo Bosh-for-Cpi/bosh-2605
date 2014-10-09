@@ -180,8 +180,11 @@ module Bosh::HwCloud
         if has_vm?(instance_id)
           @logger.info("Deleting settings for server #{instance_id}")
           options = {'InstanceId[0]'.to_sym => instance_id}
+          //get instance_ip
+          instance_info = @hwcloudsdk.describe_instances(options)
+          instance_ip = instance_info['instancesSet']['instancesSet'][0]['privateIpAddress']
           @hwcloudsdk.terminate_instances(options)
-          @registry.delete_settings(instance_id)
+          @registry.delete_settings(instance_ip)
         else
           @logger.info("Server `#{instance_id}' not found. Skipping.")
         end
